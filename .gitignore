@@ -229,3 +229,8 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+*.xlsx
+*.docx
+*.dgml
+*.rar
+_Doc/SecurityDriven.Inferno.Doc.html
