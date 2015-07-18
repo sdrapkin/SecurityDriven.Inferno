@@ -7,23 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurityDriven.Inferno", "S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurityDriven.Inferno.ConsoleApp", "..\SecurityDriven.Inferno.ConsoleApp\SecurityDriven.Inferno.ConsoleApp.csproj", "{2DF4466C-92FB-4447-A0DA-7680C36C40D3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurityDriven.Inferno.Tests", "..\SecurityDriven.Inferno.Tests\SecurityDriven.Inferno.Tests.csproj", "{A687CB51-6F8D-4B96-A660-932EC1A4137C}"
-EndProject
 Global
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 4
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = https://sdprime.visualstudio.com/defaultcollection
-		SccLocalPath0 = .
-		SccProjectUniqueName1 = ..\\SecurityDriven.Inferno.ConsoleApp\\SecurityDriven.Inferno.ConsoleApp.csproj
-		SccProjectName1 = ../SecurityDriven.Inferno.ConsoleApp
-		SccLocalPath1 = ..\\SecurityDriven.Inferno.ConsoleApp
-		SccProjectUniqueName2 = ..\\SecurityDriven.Inferno.Tests\\SecurityDriven.Inferno.Tests.csproj
-		SccProjectName2 = ../SecurityDriven.Inferno.Tests
-		SccLocalPath2 = ..\\SecurityDriven.Inferno.Tests
-		SccProjectUniqueName3 = SecurityDriven.Inferno.csproj
-		SccLocalPath3 = .
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -37,10 +21,6 @@ Global
 		{2DF4466C-92FB-4447-A0DA-7680C36C40D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2DF4466C-92FB-4447-A0DA-7680C36C40D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2DF4466C-92FB-4447-A0DA-7680C36C40D3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A687CB51-6F8D-4B96-A660-932EC1A4137C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A687CB51-6F8D-4B96-A660-932EC1A4137C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A687CB51-6F8D-4B96-A660-932EC1A4137C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A687CB51-6F8D-4B96-A660-932EC1A4137C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

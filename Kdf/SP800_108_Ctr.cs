@@ -39,7 +39,7 @@ namespace SecurityDriven.Inferno.Kdf
 			{
 				hmac.Key = key;
 				var buffer = CreateBuffer(label: label, context: context, keyLengthInBits: derivedOutput.Count * 8);
-				DeriveKey(hmac, new ArraySegment<byte>(buffer), derivedOutput, counter);
+				DeriveKey(hmac, buffer.AsArraySegment(), derivedOutput, counter);
 			}
 		}// DeriveKey()
 

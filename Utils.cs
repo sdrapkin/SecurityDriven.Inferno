@@ -213,4 +213,10 @@ namespace SecurityDriven.Inferno
 			typeof(Buffer).GetMethod("InternalBlockCopy", BindingFlags.NonPublic | BindingFlags.Static))
 			as Action<Array, int, Array, int, int>;
 	}// class Utils
+
+	public static class ArraySegmentExtensions
+	{
+		public static ArraySegment<T> AsArraySegment<T>(this T[] arr) { return new ArraySegment<T>(arr); }
+		public static ArraySegment<T>? AsNullableArraySegment<T>(this T[] arr) { return new ArraySegment<T>?(new ArraySegment<T>(arr)); }
+	}// class ArraySegmentExtensions
 }//ns

@@ -62,7 +62,7 @@ namespace SecurityDriven.Inferno
 					_cryptoRandom.NextBytes(_contextBuffer.Value);
 
 					Utils.BlockCopy(_contextBuffer.Value, CONTEXT_TWEAK_LENGTH, _iv.Value, 0, AES_IV_LENGTH);
-					Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(_contextBuffer.Value), derivedOutput: new ArraySegment<byte>(_sessionKey.Value), counter: counter);
+					Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: _contextBuffer.Value.AsArraySegment(), derivedOutput: _sessionKey.Value.AsArraySegment(), counter: counter);
 
 					Utils.BlockCopy(_sessionKey.Value, 0, _macKey.Value, 0, MAC_KEY_LENGTH);
 					Utils.BlockCopy(_sessionKey.Value, MAC_KEY_LENGTH, _encKey.Value, 0, ENC_KEY_LENGTH);
@@ -109,7 +109,7 @@ namespace SecurityDriven.Inferno
 			byte[] finalBlock = null;
 			try
 			{
-				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(ciphertext.Array, ciphertext.Offset, CONTEXT_BUFFER_LENGTH), derivedOutput: new ArraySegment<byte>(_sessionKey.Value), counter: counter);
+				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(ciphertext.Array, ciphertext.Offset, CONTEXT_BUFFER_LENGTH), derivedOutput: _sessionKey.Value.AsArraySegment(), counter: counter);
 				Utils.BlockCopy(_sessionKey.Value, 0, _macKey.Value, 0, MAC_KEY_LENGTH);
 
 				using (var hmac = _hmacFactory())
@@ -151,7 +151,7 @@ namespace SecurityDriven.Inferno
 			if (cipherLength < AES_IV_LENGTH) return null;
 			try
 			{
-				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(ciphertext.Array, ciphertext.Offset, CONTEXT_BUFFER_LENGTH), derivedOutput: new ArraySegment<byte>(_sessionKey.Value), counter: counter);
+				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(ciphertext.Array, ciphertext.Offset, CONTEXT_BUFFER_LENGTH), derivedOutput: _sessionKey.Value.AsArraySegment(), counter: counter);
 				Utils.BlockCopy(_sessionKey.Value, 0, _macKey.Value, 0, MAC_KEY_LENGTH);
 
 				using (var hmac = _hmacFactory())
@@ -183,7 +183,7 @@ namespace SecurityDriven.Inferno
 			if (cipherLength < AES_IV_LENGTH) return false;
 			try
 			{
-				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(ciphertext.Array, ciphertext.Offset, CONTEXT_BUFFER_LENGTH), derivedOutput: new ArraySegment<byte>(_sessionKey.Value), counter: counter);
+				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(ciphertext.Array, ciphertext.Offset, CONTEXT_BUFFER_LENGTH), derivedOutput: _sessionKey.Value.AsArraySegment(), counter: counter);
 				Utils.BlockCopy(_sessionKey.Value, 0, _macKey.Value, 0, MAC_KEY_LENGTH);
 				using (var hmac = _hmacFactory())
 				{

@@ -15,7 +15,7 @@ namespace SecurityDriven.Inferno.Extensions
 			if (input == null)
 				throw new ArgumentNullException("input");
 
-			return new ArraySegment<byte>(input).ToB64();
+			return input.AsArraySegment().ToB64();
 		}
 
 		// UrlTokenEncode() equivalent
