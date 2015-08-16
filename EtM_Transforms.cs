@@ -20,8 +20,8 @@ namespace SecurityDriven.Inferno
 		public int OutputBlockSize { get { return EtM_Transform_Constants.OUTPUT_BLOCK_SIZE; } }
 
 		byte[] key;
-		uint currentChunkNumber;
-		ArraySegment<byte>? salt;
+	    public uint CurrentChunkNumber { get; private set; }
+	    ArraySegment<byte>? salt;
 
 		/// <summary>ctor</summary>
 		public EtM_EncryptTransform(byte[] key, ArraySegment<byte>? salt = null, uint chunkNumber = 1)
@@ -29,7 +29,7 @@ namespace SecurityDriven.Inferno
 			if (key == null) throw new ArgumentNullException("key", "key cannot be null.");
 			this.key = key;
 			this.salt = salt;
-			this.currentChunkNumber = chunkNumber;
+			this.CurrentChunkNumber = chunkNumber;
 		}
 
 		public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
@@ -51,7 +51,7 @@ namespace SecurityDriven.Inferno
 						output: outputBuffer,
 						outputOffset: outputOffset + j,
 						salt: this.salt,
-						counter: this.currentChunkNumber++);
+						counter: this.CurrentChunkNumber++);
 				}
 			}
 			return j;
@@ -71,7 +71,7 @@ namespace SecurityDriven.Inferno
 				output: outputBuffer,
 				outputOffset: 0,
 				salt: this.salt,
-				counter: this.currentChunkNumber);
+				counter: this.CurrentChunkNumber);
 
 			this.Dispose();
 			return outputBuffer;
@@ -94,8 +94,8 @@ namespace SecurityDriven.Inferno
 		public bool IsAuthenticateOnly { get; private set; }
 
 		byte[] key;
-	    public uint CurrentChunkNumber { get; private set; }
-	    ArraySegment<byte>? salt;
+		uint currentChunkNumber;
+		ArraySegment<byte>? salt;
 
 		/// <summary>ctor</summary>
 		public EtM_DecryptTransform(byte[] key, ArraySegment<byte>? salt = null, uint chunkNumber = 1, bool authenticateOnly = false)
@@ -103,7 +103,7 @@ namespace SecurityDriven.Inferno
 			if (key == null) throw new ArgumentNullException("key", "key cannot be null.");
 			this.key = key;
 			this.salt = salt;
-			this.CurrentChunkNumber = chunkNumber;
+			this.currentChunkNumber = chunkNumber;
 			this.IsAuthenticateOnly = authenticateOnly;
 		}
 
@@ -130,7 +130,7 @@ namespace SecurityDriven.Inferno
 							masterKey: this.key,
 							ciphertext: cipherText,
 							salt: this.salt,
-							counter: this.CurrentChunkNumber))
+							counter: this.currentChunkNumber))
 							outputSegment = null;
 					}
 					else
@@ -140,15 +140,15 @@ namespace SecurityDriven.Inferno
 							ciphertext: cipherText,
 							outputSegment: ref outputSegment,
 							salt: this.salt,
-							counter: this.CurrentChunkNumber);
+							counter: this.currentChunkNumber);
 					}
 
 					if (outputSegment == null)
 					{
 						this.key = null;
-						throw new CryptographicException("Decryption failed for block " + this.CurrentChunkNumber.ToString() + ".");
+						throw new CryptographicException("Decryption failed for block " + this.currentChunkNumber.ToString() + ".");
 					}
-					++this.CurrentChunkNumber;
+					++this.currentChunkNumber;
 				}
 			}
 			return j;
@@ -172,7 +172,7 @@ namespace SecurityDriven.Inferno
 					masterKey: this.key,
 					ciphertext: cipherText,
 					salt: this.salt,
-					counter: this.CurrentChunkNumber))
+					counter: this.currentChunkNumber))
 					outputBuffer = Utils.ZeroLengthArray<byte>.Value;
 			}
 			else
@@ -181,11 +181,11 @@ namespace SecurityDriven.Inferno
 					masterKey: this.key,
 					ciphertext: cipherText,
 					salt: this.salt,
-					counter: this.CurrentChunkNumber);
+					counter: this.currentChunkNumber);
 			}
 			this.Dispose();
 			if (outputBuffer == null)
-				throw new CryptographicException("Decryption failed for block " + this.CurrentChunkNumber.ToString() + ".");
+				throw new CryptographicException("Decryption failed for block " + this.currentChunkNumber.ToString() + ".");
 
 			this.IsComplete = true;
 			return outputBuffer;
