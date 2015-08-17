@@ -20,8 +20,8 @@ namespace SecurityDriven.Inferno
 		public int OutputBlockSize { get { return EtM_Transform_Constants.OUTPUT_BLOCK_SIZE; } }
 
 		byte[] key;
-		uint currentChunkNumber;
-		ArraySegment<byte>? salt;
+	    public uint CurrentChunkNumber { get; private set; }
+	    ArraySegment<byte>? salt;
 
 		public uint CurrentChunkNumber { get { return this.currentChunkNumber; } }
 
@@ -31,7 +31,7 @@ namespace SecurityDriven.Inferno
 			if (key == null) throw new ArgumentNullException("key", "key cannot be null.");
 			this.key = key;
 			this.salt = salt;
-			this.currentChunkNumber = chunkNumber;
+			this.CurrentChunkNumber = chunkNumber;
 		}
 
 		public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
@@ -53,7 +53,7 @@ namespace SecurityDriven.Inferno
 						output: outputBuffer,
 						outputOffset: outputOffset + j,
 						salt: this.salt,
-						counter: this.currentChunkNumber++);
+						counter: this.CurrentChunkNumber++);
 				}
 			}
 			return j;
@@ -73,7 +73,7 @@ namespace SecurityDriven.Inferno
 				output: outputBuffer,
 				outputOffset: 0,
 				salt: this.salt,
-				counter: this.currentChunkNumber);
+				counter: this.CurrentChunkNumber);
 
 			this.Dispose();
 			return outputBuffer;
