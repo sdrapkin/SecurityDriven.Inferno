@@ -61,5 +61,6 @@ namespace SecurityDriven.Inferno.Extensions
 
 		public static readonly Base16Config HexUppercase = new Base16Config("0123456789ABCDEF".ToCharArray());
 		public static readonly Base16Config HexLowercase = new Base16Config("0123456789abcdef".ToCharArray());
+		public static readonly Base16Config HexYubiModhex = new Base16Config("cbdefghijklnrtuv".ToCharArray());
 	}//class Base16Config
 }//ns

@@ -12,9 +12,6 @@ namespace SecurityDriven.Inferno.Extensions
 	{
 		public static string ToB64(this byte[] input)
 		{
-			if (input == null)
-				throw new ArgumentNullException("input");
-
 			return input.AsArraySegment().ToB64();
 		}
 
@@ -138,5 +135,24 @@ namespace SecurityDriven.Inferno.Extensions
 			// Do the actual conversion
 			return Convert.FromBase64CharArray(base64Chars, 0, base64Chars.Length);
 		}// FromB64()
+
+		/* base64 web-safe encoding (padless) from RFC 4648 - https://tools.ietf.org/html/rfc4648#section-5 */
+		public static string ToB64Url(this byte[] input)
+		{
+			return input.AsArraySegment().ToB64Url();
+		}// ToB64Url()
+
+		public static string ToB64Url(this ArraySegment<byte> inputSegment)
+		{
+			string b64str = inputSegment.ToB64();
+			return b64str.Substring(0, b64str.Length - 1);
+		}// ToB64Url()
+
+		public static byte[] FromB64Url(this string str)
+		{
+			int lengthMod4 = str.Length % 4;
+			string b64str = str + (lengthMod4 == 2 ? "2" : lengthMod4 == 3 ? "1" : "0");
+			return b64str.FromB64();
+		}// FromB64Url()
 	}//class B64Extensions
 }//ns
