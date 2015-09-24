@@ -212,6 +212,97 @@ namespace SecurityDriven.Inferno
 			typeof(Action<Array, int, Array, int, int>),
 			typeof(Buffer).GetMethod("InternalBlockCopy", BindingFlags.NonPublic | BindingFlags.Static))
 			as Action<Array, int, Array, int, int>;
+
+		#region Combine byte arrays & segments
+		public static byte[] Combine(ArraySegment<byte> a, ArraySegment<byte> b)
+		{
+			byte[] combinedArray = new byte[a.Count + b.Count];
+			BlockCopy(a.Array, a.Offset, combinedArray, 0, a.Count);
+			BlockCopy(b.Array, b.Offset, combinedArray, a.Count, b.Count);
+			return combinedArray;
+		}// Combine(two byte array segments)
+
+		public static byte[] Combine(byte[] a, byte[] b) { return Combine(a.AsArraySegment(), b.AsArraySegment()); }// Combine(two byte arrays)
+
+		public static byte[] Combine(ArraySegment<byte> a, ArraySegment<byte> b, ArraySegment<byte> c)
+		{
+			byte[] combinedArray = new byte[a.Count + b.Count + c.Count];
+			BlockCopy(a.Array, a.Offset, combinedArray, 0, a.Count);
+			BlockCopy(b.Array, b.Offset, combinedArray, a.Count, b.Count);
+			BlockCopy(c.Array, c.Offset, combinedArray, a.Count + b.Count, c.Count);
+			return combinedArray;
+		}// Combine(three byte array segments)
+
+		public static byte[] Combine(byte[] a, byte[] b, byte[] c) { return Combine(a.AsArraySegment(), b.AsArraySegment(), c.AsArraySegment()); }// Combine(three byte arrays)
+
+		public static byte[] Combine(params byte[][] arrays)
+		{
+			int combinedArrayLength = 0, combinedArrayOffset = 0;
+			for (int i = 0; i < arrays.Length; ++i) combinedArrayLength += arrays[i].Length;
+			byte[] array, combinedArray = new byte[combinedArrayLength];
+
+			for (int i = 0; i < arrays.Length; ++i)
+			{
+				array = arrays[i];
+				BlockCopy(array, 0, combinedArray, combinedArrayOffset, array.Length);
+				combinedArrayOffset += array.Length;
+			}
+			return combinedArray;
+		}// Combine(params byte[][])
+
+		public static byte[] Combine(params ArraySegment<byte>[] arraySegments)
+		{
+			int combinedArrayLength = 0, combinedArrayOffset = 0;
+			for (int i = 0; i < arraySegments.Length; ++i) combinedArrayLength += arraySegments[i].Count;
+			byte[] combinedArray = new byte[combinedArrayLength];
+
+			for (int i = 0; i < arraySegments.Length; ++i)
+			{
+				var segment = arraySegments[i];
+				BlockCopy(segment.Array, segment.Offset, combinedArray, combinedArrayOffset, segment.Count);
+				combinedArrayOffset += segment.Count;
+			}
+			return combinedArray;
+		}// Combine(params ArraySegment<byte>[])
+		#endregion
+
+		#region Xor
+		[StructLayout(LayoutKind.Explicit)]
+		struct Union
+		{
+			[FieldOffset(0)]
+			public byte[] Bytes;
+
+			[FieldOffset(0)]
+			public long[] Longs;
+		}// struct Union
+
+		public static void Xor(byte[] dest, int destOffset, byte[] left, int leftOffset, byte[] right, int rightOffset, int byteCount)
+		{
+			int i = 0;
+			if ((destOffset & 7) == 0 && (leftOffset & 7) == 0 && (rightOffset & 7) == 0) // all offsets must be multiples of 8 for long-sized xor
+			{
+				Union destUnion = new Union { Bytes = dest }, leftUnion = new Union { Bytes = left }, rightBuffer = new Union { Bytes = right };
+				int longDestOffset = destOffset >> 3, longLeftOffset = leftOffset >> 3, longRightOffset = rightOffset >> 3, longCount = byteCount >> 3;
+				for (; i < longCount; ++i) destUnion.Longs[longDestOffset + i] = leftUnion.Longs[longLeftOffset + i] ^ rightBuffer.Longs[longRightOffset + i];
+				i = longCount << 3;
+			}
+			for (; i < byteCount; ++i) dest[destOffset + i] = (byte)(left[leftOffset + i] ^ right[rightOffset + i]);
+		}// Xor()
+
+		public static void Xor(byte[] dest, int destOffset, byte[] left, int leftOffset, int byteCount)
+		{
+			int i = 0;
+			if ((destOffset & 7) == 0 && (leftOffset & 7) == 0) // all offsets must be multiples of 8 for long-sized xor
+			{
+				Union destUnion = new Union { Bytes = dest }, leftUnion = new Union { Bytes = left };
+				int longDestOffset = destOffset >> 3, longLeftOffset = leftOffset >> 3, longCount = byteCount >> 3;
+				for (; i < longCount; ++i) destUnion.Longs[longDestOffset + i] ^= leftUnion.Longs[longLeftOffset + i];
+				i = longCount << 3;
+			}
+			for (; i < byteCount; ++i) dest[destOffset + i] ^= left[leftOffset + i];
+		}// Xor()
+		#endregion
 	}// class Utils
 
 	public static class ArraySegmentExtensions

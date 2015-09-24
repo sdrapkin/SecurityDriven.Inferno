@@ -57,8 +57,8 @@ namespace SecurityDriven.Inferno.Cipher
 			if (fullBlockSize > 0)
 			{
 				fullBlockSize = this.cryptoTransform.TransformBlock(outputBuffer, outputOffset, fullBlockSize, outputBuffer, outputOffset);
-				for (i = 0; i < fullBlockSize; ++i) outputBuffer[outputOffset + i] ^= inputBuffer[inputOffset + i];
-				//XorArrays(outputBuffer, outputOffset, inputBuffer, inputOffset, fullBlockSize);
+				//for (i = 0; i < fullBlockSize; ++i) outputBuffer[outputOffset + i] ^= inputBuffer[inputOffset + i];
+				Utils.Xor(outputBuffer, outputOffset, inputBuffer, inputOffset, fullBlockSize);
 			}
 
 			if (partialBlockSize > 0)
