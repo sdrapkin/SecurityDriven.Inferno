@@ -10,10 +10,9 @@ namespace SecurityDriven.Inferno.Kdf
 	/// </remarks>
 	public static class SP800_108_Ctr
 	{
-		const int COUNTER_LENGTH = sizeof(uint);
-		const int KEY_LENGTH = sizeof(int);
+		const int COUNTER_LENGTH = sizeof(uint), KEY_LENGTH = sizeof(uint);
 
-		internal static byte[] CreateBuffer(ArraySegment<byte>? label, ArraySegment<byte>? context, int keyLengthInBits)
+		internal static byte[] CreateBuffer(ArraySegment<byte>? label, ArraySegment<byte>? context, uint keyLengthInBits)
 		{
 			int labelLength = (label != null) ? label.Value.Count : 0;
 			int contextLength = (context != null) ? context.Value.Count : 0;
@@ -29,7 +28,7 @@ namespace SecurityDriven.Inferno.Kdf
 				Utils.BlockCopy(context.Value.Array, context.Value.Offset, buffer, COUNTER_LENGTH + labelLength + 1, contextLength);
 
 			// store key length
-			new Utils.IntStruct { IntValue = keyLengthInBits }.ToBEBytes(buffer, bufferLength - COUNTER_LENGTH);
+			new Utils.IntStruct { UintValue = keyLengthInBits }.ToBEBytes(buffer, bufferLength - KEY_LENGTH);
 			return buffer;
 		}// CreateBuffer()
 
@@ -38,7 +37,7 @@ namespace SecurityDriven.Inferno.Kdf
 			using (var hmac = hmacFactory())
 			{
 				hmac.Key = key;
-				var buffer = CreateBuffer(label: label, context: context, keyLengthInBits: derivedOutput.Count * 8);
+				var buffer = CreateBuffer(label: label, context: context, keyLengthInBits: checked((uint)(derivedOutput.Count << 3)));
 				DeriveKey(hmac, buffer.AsArraySegment(), derivedOutput, counter);
 			}
 		}// DeriveKey()
@@ -56,7 +55,7 @@ namespace SecurityDriven.Inferno.Kdf
 					K_i = keyedHmac.ComputeHash(bufferSegment.Array, bufferSegment.Offset, bufferSegment.Count);
 
 					// copy the leftmost bits of K_i into the output buffer
-					int numBytesToCopy = Math.Min(derivedOutputCount, K_i.Length);
+					int numBytesToCopy = derivedOutputCount > K_i.Length ? K_i.Length : derivedOutputCount;//Math.Min(derivedOutputCount, K_i.Length);
 					Utils.BlockCopy(K_i, 0, derivedOutput.Array, derivedOutputOffset, numBytesToCopy);
 					derivedOutputOffset += numBytesToCopy;
 					derivedOutputCount -= numBytesToCopy;

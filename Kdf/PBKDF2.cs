@@ -117,18 +117,15 @@ namespace SecurityDriven.Inferno.Kdf
 		byte[] Func()
 		{
 			new Utils.IntStruct { UintValue = this.block }.ToBEBytes(inputBuffer);
-			this.hmac.TransformBlock(this.salt, 0, this.salt.Length, this.salt, 0);
-			this.hmac.TransformFinalBlock(inputBuffer, 0, inputBuffer.Length);
+			this.hmac.TransformBlock(inputBuffer: this.salt, inputOffset: 0, inputCount: this.salt.Length, outputBuffer: null, outputOffset: 0);
+			this.hmac.TransformFinalBlock(inputBuffer: inputBuffer, inputOffset: 0, inputCount: inputBuffer.Length);
 			byte[] hash = this.hmac.Hash;
 			this.hmac.Initialize();
 			byte[] buffer3 = hash;
 			for (int i = 2; i <= this.iterations; i++)
 			{
 				hash = this.hmac.ComputeHash(hash);
-				for (int j = 0; j < BlockSize; j++)
-				{
-					buffer3[j] ^= hash[j];
-				}
+				Utils.Xor(dest: buffer3, destOffset: 0, left: hash, leftOffset: 0, byteCount: BlockSize);
 			}
 			this.block++;
 			return buffer3;

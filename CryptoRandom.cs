@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Threading;
 
 namespace SecurityDriven.Inferno
 {
@@ -13,12 +16,47 @@ namespace SecurityDriven.Inferno
 	/// </summary>
 	public class CryptoRandom : Random
 	{
-		static RNGCryptoServiceProvider _rng = new RNGCryptoServiceProvider();
-		const int BUFFER_SIZE = 1024 * 4; // 4k buffer seems to work best (empirical experimentation)
-		const int BUFFERED_THRESHOLD = 100; // non-buffered approach seems faster beyond this point (empirical experimentation)
-		byte[] _buffer = new byte[BUFFER_SIZE];
-		int _bufferPosition = BUFFER_SIZE;
-		object lockObj = new Object();
+		static readonly int CACHE_THRESHOLD; // non-buffered approach seems faster beyond this threshold (empirical experimentation).
+		const int BYTE_CACHE_SIZE = 4096; // 4k buffer seems to work best (empirical experimentation). Buffer must be larger than CACHE_THRESHOLD.
+		readonly byte[] _byteCache = new byte[BYTE_CACHE_SIZE];
+		volatile int _byteCachePosition = BYTE_CACHE_SIZE;
+
+		static readonly Action<byte[]> _fillBufferWithRandomBytes;
+		static readonly BCrypt.BCryptAlgorithmHandle _bcryptAgorithm;
+
+		static CryptoRandom()
+		{
+			try { _bcryptAgorithm = BCrypt.OpenAlgorithm(BCrypt.BCRYPT_RNG_ALGORITHM, BCrypt.MS_PRIMITIVE_PROVIDER); }
+			catch { _bcryptAgorithm = null; }
+
+			if (_bcryptAgorithm == null)
+			{
+				_fillBufferWithRandomBytes = new RNGCryptoServiceProvider().GetBytes;
+				CACHE_THRESHOLD = 104;
+			}
+			else
+			{
+				_fillBufferWithRandomBytes = _bCryptGetBytes;
+				CACHE_THRESHOLD = 64;
+			}
+		}// static ctor
+
+		public CryptoRandom() : base(Seed: 0)
+		{
+			// Minimize the wasted time of calling default System.Random base ctor.
+			// We can't avoid calling at least some base ctor, ie. 2~3 milliseconds are wasted anyway.
+			// That's the price of inheriting from System.Random (doesn't implement an interface).
+		}// ctor
+
+		static void _bCryptGetBytes(byte[] buffer)
+		{
+			Debug.Assert(_bcryptAgorithm != null, "algorithm != null");
+			Debug.Assert(!_bcryptAgorithm.IsClosed && !_bcryptAgorithm.IsInvalid, "!algorithm.IsClosed && !algorithm.IsInvalid");
+			Debug.Assert(buffer != null, "buffer != null");
+
+			BCrypt.ErrorCode errorCode = BCrypt.DllImportedNativeMethods.BCryptGenRandom(_bcryptAgorithm, buffer, buffer.Length, 0);
+			if (errorCode != BCrypt.ErrorCode.Success) throw new CryptographicException((int)errorCode);
+		}// _bCryptGetBytes()
 
 		#region NextLong()
 		/// <summary>
@@ -71,13 +109,13 @@ namespace SecurityDriven.Inferno
 				throw new ArgumentOutOfRangeException("minValue");
 
 			ulong diff = decimal.ToUInt64((decimal)maxValue - minValue);
-			ulong upperBound = ulong.MaxValue / diff * diff - 1;
+			ulong upperBound = ulong.MaxValue / diff * diff;
 
 			ulong ul;
 			do
 			{
 				ul = GetRandomULong();
-			} while (ul > upperBound);
+			} while (ul >= upperBound);
 			return decimal.ToInt64((decimal)minValue + ul % diff);
 		}//NextLong()
 		#endregion
@@ -133,13 +171,13 @@ namespace SecurityDriven.Inferno
 				throw new ArgumentOutOfRangeException("minValue");
 
 			long diff = (long)maxValue - minValue;
-			long upperBound = uint.MaxValue / diff * diff - 1;
+			long upperBound = uint.MaxValue / diff * diff;
 
 			uint ui;
 			do
 			{
 				ui = GetRandomUInt();
-			} while (ui > upperBound);
+			} while (ui >= upperBound);
 			return (int)(minValue + (ui % diff));
 		}//Next()
 		#endregion
@@ -157,6 +195,18 @@ namespace SecurityDriven.Inferno
 		}//NextDouble()
 
 		/// <summary>
+		/// Returns a new count-sized byte array filled with random bytes.
+		/// </summary>
+		/// <param name="count">Array length.</param>
+		/// <returns>Random byte array.</returns>
+		public byte[] NextBytes(int count)
+		{
+			byte[] bytes = new byte[count];
+			this.NextBytes(bytes);
+			return bytes;
+		}//NextBytes()
+
+		/// <summary>
 		/// Fills the elements of a specified array of bytes with random numbers.
 		/// </summary>
 		/// <param name="buffer">An array of bytes to contain random numbers.</param>
@@ -166,36 +216,29 @@ namespace SecurityDriven.Inferno
 		public override void NextBytes(byte[] buffer)
 		{
 			var bufferLength = buffer.Length;
-			if (bufferLength > BUFFERED_THRESHOLD)
-			{
-				_rng.GetBytes(buffer);
-				return;
-			}
+			if (bufferLength == 0) return;
+			if (bufferLength > CACHE_THRESHOLD) { _fillBufferWithRandomBytes(buffer); return; }
 
-			lock (lockObj)
+			while (true)
 			{
-				if ((BUFFER_SIZE - _bufferPosition) < bufferLength)
+				int currentByteCachePosition = Interlocked.Add(ref _byteCachePosition, bufferLength);
+				if (currentByteCachePosition <= BYTE_CACHE_SIZE && currentByteCachePosition > 0)
 				{
-					_rng.GetBytes(_buffer);
-					_bufferPosition = 0;
+					Utils.BlockCopy(_byteCache, currentByteCachePosition - bufferLength, buffer, 0, bufferLength); return;
 				}
 
-				Utils.BlockCopy(_buffer, _bufferPosition, buffer, 0, bufferLength);
-				_bufferPosition += bufferLength;
-			}
-		}//NextBytes()
-
-		/// <summary>
-		/// Returns a new count-sized byte array filled with random bytes.
-		/// </summary>
-		/// <param name="count">Array length.</param>
-		/// <returns>Random byte array.</returns>
-		public byte[] NextBytes(int count)
-		{
-			if (count < 0) throw new ArgumentOutOfRangeException("count", "count must be non-negative.");
-			byte[] bytes = new byte[count];
-			this.NextBytes(bytes);
-			return bytes;
+				lock (_byteCache)
+				{
+					currentByteCachePosition = _byteCachePosition; // atomic read
+					if (currentByteCachePosition > (BYTE_CACHE_SIZE - bufferLength) || currentByteCachePosition <= 0)
+					{
+						_fillBufferWithRandomBytes(_byteCache);
+						_byteCachePosition = bufferLength; // atomic write
+						Utils.BlockCopy(_byteCache, 0, buffer, 0, bufferLength);
+						return;
+					}
+				}// lock
+			}// while(true)
 		}//NextBytes()
 
 		/// <summary>
@@ -203,19 +246,23 @@ namespace SecurityDriven.Inferno
 		/// </summary>
 		uint GetRandomUInt()
 		{
-			uint rand;
-			lock (lockObj)
+			while (true)
 			{
-				if ((BUFFER_SIZE - _bufferPosition) < sizeof(uint))
-				{
-					_rng.GetBytes(_buffer);
-					_bufferPosition = 0;
-				}
+				int currentByteCachePosition = Interlocked.Add(ref _byteCachePosition, sizeof(uint));
+				if (currentByteCachePosition <= BYTE_CACHE_SIZE && currentByteCachePosition > 0)
+					return BitConverter.ToUInt32(_byteCache, currentByteCachePosition - sizeof(uint));
 
-				rand = BitConverter.ToUInt32(_buffer, _bufferPosition);
-				_bufferPosition += sizeof(uint);
-			}
-			return rand;
+				lock (_byteCache)
+				{
+					currentByteCachePosition = _byteCachePosition; // atomic read
+					if (currentByteCachePosition > (BYTE_CACHE_SIZE - sizeof(uint)) || currentByteCachePosition <= 0)
+					{
+						_fillBufferWithRandomBytes(_byteCache);
+						_byteCachePosition = sizeof(uint); // atomic write
+						return BitConverter.ToUInt32(_byteCache, 0);
+					}
+				}// lock
+			}// while(true)
 		}//GetRandomUInt()
 
 		/// <summary>
@@ -223,19 +270,94 @@ namespace SecurityDriven.Inferno
 		/// </summary>
 		ulong GetRandomULong()
 		{
-			ulong rand;
-			lock (lockObj)
+			while (true)
 			{
-				if ((BUFFER_SIZE - _bufferPosition) < sizeof(ulong))
-				{
-					_rng.GetBytes(_buffer);
-					_bufferPosition = 0;
-				}
+				int currentByteCachePosition = Interlocked.Add(ref _byteCachePosition, sizeof(ulong));
+				if (currentByteCachePosition <= BYTE_CACHE_SIZE && currentByteCachePosition > 0)
+					return BitConverter.ToUInt64(_byteCache, currentByteCachePosition - sizeof(ulong));
 
-				rand = BitConverter.ToUInt64(_buffer, _bufferPosition);
-				_bufferPosition += sizeof(ulong);
-			}
-			return rand;
+				lock (_byteCache)
+				{
+					currentByteCachePosition = _byteCachePosition; // atomic read
+					if (currentByteCachePosition > (BYTE_CACHE_SIZE - sizeof(ulong)) || currentByteCachePosition <= 0)
+					{
+						_fillBufferWithRandomBytes(_byteCache);
+						_byteCachePosition = sizeof(ulong); // atomic write
+						return BitConverter.ToUInt64(_byteCache, 0);
+					}
+				}// lock
+			}// while(true)
 		}//GetRandomULong()
 	}//class CryptoRandom
+
+	#region BCrypt
+	internal static class BCrypt
+	{
+		internal const string MS_PRIMITIVE_PROVIDER = "Microsoft Primitive Provider"; // MS_PRIMITIVE_PROVIDER -- https://msdn.microsoft.com/en-us/library/windows/desktop/aa375479(v=vs.85).aspx
+		internal const string BCRYPT_RNG_ALGORITHM = "RNG"; // BCRYPT_RNG_ALGORITHM -- https://msdn.microsoft.com/en-us/library/windows/desktop/aa375534(v=vs.85).aspx
+
+		/// <summary>
+		/// Open a handle to a BCrypt algorithm provider.
+		/// </summary>
+		internal static BCryptAlgorithmHandle OpenAlgorithm(string algorithm, string implementation)
+		{
+			Debug.Assert(!string.IsNullOrEmpty(algorithm), "!String.IsNullOrEmpty(algorithm)");
+			Debug.Assert(!string.IsNullOrEmpty(implementation), "!String.IsNullOrEmpty(implementation)");
+
+			BCryptAlgorithmHandle algorithmHandle = null;
+			ErrorCode error = DllImportedNativeMethods.BCryptOpenAlgorithmProvider(out algorithmHandle, algorithm, implementation, AlgorithmProviderOptions.None);
+			if (error != ErrorCode.Success) throw new CryptographicException(error.ToString());
+			return algorithmHandle;
+		}
+
+		internal sealed class BCryptAlgorithmHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
+		{
+			BCryptAlgorithmHandle() : base(ownsHandle: true) { }
+			protected override bool ReleaseHandle()
+			{
+				return DllImportedNativeMethods.BCryptCloseAlgorithmProvider(handle, AlgorithmProviderOptions.None) == ErrorCode.Success;
+			}
+		}// class BCryptAlgorithmHandle
+
+		/// <summary>
+		/// Result codes from BCrypt APIs.
+		/// </summary>
+		internal enum ErrorCode
+		{
+			Success = 0x00000000,                                       // STATUS_SUCCESS
+			AuthenticationTagMismatch = unchecked((int)0xC000A002),     // STATUS_AUTH_TAG_MISMATCH
+			BufferToSmall = unchecked((int)0xC0000023)                  // STATUS_BUFFER_TOO_SMALL
+		}// enum ErrorCode
+
+		/// <summary>
+		/// Flags for BCryptOpenAlgorithmProvider.
+		/// </summary>
+		[Flags] internal enum AlgorithmProviderOptions { None = 0x00000000 }
+
+		internal static class DllImportedNativeMethods
+		{
+			const string bcrypt_dll = "bcrypt.dll";
+
+			[DllImport(bcrypt_dll)]
+			// https://msdn.microsoft.com/en-us/library/windows/desktop/aa375458(v=vs.85).aspx
+			internal static extern ErrorCode BCryptGenRandom(
+				BCryptAlgorithmHandle hAlgorithm,
+				[In, Out, MarshalAs(UnmanagedType.LPArray)] byte[] pbBuffer,
+				int cbBuffer,
+				int dwFlags);
+
+			[DllImport(bcrypt_dll)]
+			// https://msdn.microsoft.com/en-us/library/windows/desktop/aa375479(v=vs.85).aspx
+			internal static extern ErrorCode BCryptOpenAlgorithmProvider(
+				[Out] out BCryptAlgorithmHandle phAlgorithm,
+				[MarshalAs(UnmanagedType.LPWStr)] string pszAlgId,
+				[MarshalAs(UnmanagedType.LPWStr)] string pszImplementation,
+				AlgorithmProviderOptions dwFlags);
+
+			[DllImport(bcrypt_dll)]
+			// https://msdn.microsoft.com/en-us/library/windows/desktop/aa375377(v=vs.85).aspx
+			internal static extern ErrorCode BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, AlgorithmProviderOptions dwFlags);
+		}// class DllImportedNativeMathods
+	}// class BCrypt
+	#endregion
 }//ns

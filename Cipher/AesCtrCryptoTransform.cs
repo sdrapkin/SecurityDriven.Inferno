@@ -43,7 +43,7 @@ namespace SecurityDriven.Inferno.Cipher
 		public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
 		{
 			int partialBlockSize = inputCount % AesConstants.AES_BLOCK_SIZE;
-			int fullBlockSize = inputCount - partialBlockSize;
+			int fullBlockSize = inputCount & (-AesConstants.AES_BLOCK_SIZE);//inputCount - partialBlockSize;
 			int i, j;
 			byte[] counterBuffer = _counterBuffer.Value; // looks dumb, but local-access is faster than field-access
 

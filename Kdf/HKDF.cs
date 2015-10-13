@@ -46,7 +46,7 @@ namespace SecurityDriven.Inferno.Kdf
 			var okm = new byte[countBytes];
 			if (k_unused > 0)
 			{
-				var min = Math.Min(k_unused, countBytes);
+				var min = k_unused > countBytes ? countBytes : k_unused;//Math.Min(k_unused, countBytes);
 				Utils.BlockCopy(k, hashLength - k_unused, okm, 0, min);
 				countBytes -= min;
 				k_unused -= min;

@@ -27,7 +27,7 @@ namespace SecurityDriven.Inferno
 
 		public static int CalculateCiphertextLength(ArraySegment<byte> plaintext)
 		{
-			int finalBlockLength = plaintext.Count - plaintext.Count / AES_IV_LENGTH * AES_IV_LENGTH; ;
+			int finalBlockLength = plaintext.Count - (plaintext.Count & (-Cipher.AesConstants.AES_BLOCK_SIZE));
 			int paddingLength = AES_IV_LENGTH - finalBlockLength;
 			return CONTEXT_BUFFER_LENGTH + plaintext.Count + paddingLength + MAC_LENGTH;
 		}
@@ -48,9 +48,9 @@ namespace SecurityDriven.Inferno
 
 		public static void Encrypt(byte[] masterKey, ArraySegment<byte> plaintext, byte[] output, int outputOffset, ArraySegment<byte>? salt = null, uint counter = 1)
 		{
-			int fullBlockLength = plaintext.Count / AES_IV_LENGTH * AES_IV_LENGTH;
-			int finalBlockLength = plaintext.Count - fullBlockLength;
-			int paddingLength = AES_IV_LENGTH - finalBlockLength;
+			int fullBlockLength = plaintext.Count & (-Cipher.AesConstants.AES_BLOCK_SIZE);
+			int finalBlockLength = plaintext.Count % Cipher.AesConstants.AES_BLOCK_SIZE;
+			int paddingLength = Cipher.AesConstants.AES_BLOCK_SIZE - finalBlockLength;
 			int ciphertextLength = CONTEXT_BUFFER_LENGTH + plaintext.Count + paddingLength + MAC_LENGTH;
 			if (output.Length - outputOffset < ciphertextLength) throw new ArgumentOutOfRangeException("output", "'output' array segment is not big enough for the ciphertext");
 
@@ -90,10 +90,9 @@ namespace SecurityDriven.Inferno
 
 		public static byte[] Encrypt(byte[] masterKey, ArraySegment<byte> plaintext, ArraySegment<byte>? salt = null, uint counter = 1)
 		{
-			int fullBlockLength = plaintext.Count / AES_IV_LENGTH * AES_IV_LENGTH;
-			int finalBlockLength = plaintext.Count - fullBlockLength;
-			int paddingLength = AES_IV_LENGTH - finalBlockLength;
-
+			int fullBlockLength = plaintext.Count & (-Cipher.AesConstants.AES_BLOCK_SIZE);
+			int finalBlockLength = plaintext.Count % Cipher.AesConstants.AES_BLOCK_SIZE;
+			int paddingLength = Cipher.AesConstants.AES_BLOCK_SIZE - finalBlockLength;
 			int ciphertextLength = CONTEXT_BUFFER_LENGTH + plaintext.Count + paddingLength + MAC_LENGTH;
 			byte[] buffer = new byte[ciphertextLength];
 			EtM_CBC.Encrypt(masterKey: masterKey, plaintext: plaintext, output: buffer, outputOffset: 0, salt: salt, counter: counter);
@@ -104,7 +103,7 @@ namespace SecurityDriven.Inferno
 		public static void Decrypt(byte[] masterKey, ArraySegment<byte> ciphertext, ref ArraySegment<byte>? outputSegment, ArraySegment<byte>? salt = null, uint counter = 1)
 		{
 			int cipherLength = ciphertext.Count - CONTEXT_BUFFER_LENGTH - MAC_LENGTH;
-			if (cipherLength < AES_IV_LENGTH) { outputSegment = null; return; }
+			if (cipherLength < Cipher.AesConstants.AES_BLOCK_SIZE) { outputSegment = null; return; }
 			int fullBlockLength = cipherLength - AES_IV_LENGTH;
 			byte[] finalBlock = null;
 			try
@@ -148,7 +147,7 @@ namespace SecurityDriven.Inferno
 		public static byte[] Decrypt(byte[] masterKey, ArraySegment<byte> ciphertext, ArraySegment<byte>? salt = null, uint counter = 1)
 		{
 			int cipherLength = ciphertext.Count - CONTEXT_BUFFER_LENGTH - MAC_LENGTH;
-			if (cipherLength < AES_IV_LENGTH) return null;
+			if (cipherLength < Cipher.AesConstants.AES_BLOCK_SIZE) return null;
 			try
 			{
 				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(ciphertext.Array, ciphertext.Offset, CONTEXT_BUFFER_LENGTH), derivedOutput: _sessionKey.Value.AsArraySegment(), counter: counter);
@@ -180,7 +179,7 @@ namespace SecurityDriven.Inferno
 		public static bool Authenticate(byte[] masterKey, ArraySegment<byte> ciphertext, ArraySegment<byte>? salt = null, uint counter = 1)
 		{
 			int cipherLength = ciphertext.Count - CONTEXT_BUFFER_LENGTH - MAC_LENGTH;
-			if (cipherLength < AES_IV_LENGTH) return false;
+			if (cipherLength < Cipher.AesConstants.AES_BLOCK_SIZE) return false;
 			try
 			{
 				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(ciphertext.Array, ciphertext.Offset, CONTEXT_BUFFER_LENGTH), derivedOutput: _sessionKey.Value.AsArraySegment(), counter: counter);

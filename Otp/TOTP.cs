@@ -38,12 +38,12 @@ namespace SecurityDriven.Inferno.Otp
 				hash = hmac.HashFinal(); // do not dispose hmac before 'hash' access --> will zero-out internal array
 
 				// Generate dynamically-truncated string
-				var offset = hash[hash.Length - 1] & 0xf;
+				var offset = hash[hash.Length - 1] & 0x0F;
 				Debug.Assert(offset + 4 < hash.Length);
-				var binaryCode = (hash[offset] & 0x7f) << 24
-								 | (hash[offset + 1] & 0xff) << 16
-								 | (hash[offset + 2] & 0xff) << 8
-								 | (hash[offset + 3] & 0xff);
+				var binaryCode = (hash[offset] & 0x7F) << 24
+								 | (hash[offset + 1]) << 16
+								 | (hash[offset + 2]) << 8
+								 | (hash[offset + 3]);
 
 				return binaryCode % _totpModulos[totpLength];
 			}//using
