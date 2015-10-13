@@ -357,7 +357,7 @@ namespace SecurityDriven.Inferno
 			[DllImport(bcrypt_dll)]
 			// https://msdn.microsoft.com/en-us/library/windows/desktop/aa375377(v=vs.85).aspx
 			internal static extern ErrorCode BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, AlgorithmProviderOptions dwFlags);
-		}// class DllImportedNativeMathods
+		}// class DllImportedNativeMethods
 	}// class BCrypt
 	#endregion
 }//ns
