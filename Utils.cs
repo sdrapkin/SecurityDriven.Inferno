@@ -29,6 +29,19 @@ namespace SecurityDriven.Inferno
 		}// CreateSetter()
 		#endregion
 
+		#region CreateGetter<T,V>
+		internal static Func<T, V> CreateGetter<T, V>(this FieldInfo field)
+		{
+			var targetExp = Expression.Parameter(typeof(T));
+
+			// Expression.Property can be used here as well
+			var fieldExp = Expression.Field(targetExp, field);
+
+			var getter = Expression.Lambda<Func<T, V>>(fieldExp, targetExp).Compile();
+			return getter;
+		}// CreateGetter()
+		#endregion
+
 		#region ConstantTimeEqual() - byte arrays & ArraySegments
 		[MethodImpl(MethodImplOptions.NoOptimization)]
 		public static bool ConstantTimeEqual(byte[] x, int xOffset, byte[] y, int yOffset, int length)

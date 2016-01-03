@@ -26,14 +26,20 @@ namespace SecurityDriven.Inferno.Mac
 		}
 
 		public HMAC2(Func<HashAlgorithm> hashFactory, byte[] key) : this(hashFactory) { this.Key = key; }
-		public override int InputBlockSize { get { return this.BlockSizeValue; } }
-		public override int OutputBlockSize { get { return this.HashSize / 8; } }
+		public override int InputBlockSize => this.BlockSizeValue;
+		public override int OutputBlockSize => this.HashSize >> 3;
 
-		public new void HashCore(byte[] rgb, int ib, int cb) { base.HashCore(rgb, ib, cb); }
-		public new byte[] HashFinal() { return base.HashFinal(); }
+		public new void HashCore(byte[] rgb, int ib, int cb) => base.HashCore(rgb, ib, cb);
+		public new byte[] HashFinal() => base.HashFinal();
 
-		static readonly Type thisType = typeof(HMAC2);
-		static readonly Action<HMAC2, HashAlgorithm> m_hash1 = thisType.GetField("m_hash1", BindingFlags.NonPublic | BindingFlags.Instance).CreateSetter<HMAC2, HashAlgorithm>();
-		static readonly Action<HMAC2, HashAlgorithm> m_hash2 = thisType.GetField("m_hash2", BindingFlags.NonPublic | BindingFlags.Instance).CreateSetter<HMAC2, HashAlgorithm>();
+		static readonly Action<HMAC2, HashAlgorithm> m_hash1;
+		static readonly Action<HMAC2, HashAlgorithm> m_hash2;
+
+		static HMAC2()
+		{
+			Type thisType = typeof(HMAC2);
+			m_hash1 = thisType.GetField("m_hash1", BindingFlags.NonPublic | BindingFlags.Instance).CreateSetter<HMAC2, HashAlgorithm>();
+			m_hash2 = thisType.GetField("m_hash2", BindingFlags.NonPublic | BindingFlags.Instance).CreateSetter<HMAC2, HashAlgorithm>();
+		}//static ctor
 	}// HMAC2 class
 }//ns

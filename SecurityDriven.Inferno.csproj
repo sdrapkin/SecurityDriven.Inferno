@@ -37,8 +37,7 @@
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <DocumentationFile>
-    </DocumentationFile>
+    <DocumentationFile>bin\Release\SecurityDriven.Inferno.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -54,6 +53,7 @@
     <Compile Include="Extensions\Base32Config.cs" />
     <Compile Include="Extensions\Base32Extensions.cs" />
     <Compile Include="CryptoRandom.cs" />
+    <Compile Include="Extensions\ByteArrayExtensions.cs" />
     <Compile Include="Extensions\CngKeyExtensions.cs" />
     <Compile Include="EtM_CBC.cs" />
     <Compile Include="Kdf\HKDF.cs" />

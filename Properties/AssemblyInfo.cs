@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("http://SecurityDriven.NET/inferno")]
 [assembly: AssemblyProduct("SecurityDriven.Inferno")]
-[assembly: AssemblyCopyright("Copyright © 2015 Stan Drapkin")]
+[assembly: AssemblyCopyright("Copyright © 2016 Stan Drapkin")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -159,7 +159,7 @@ namespace SecurityDriven.Inferno.Kdf
 		{
 			get
 			{
-				return (byte[])this.salt.Clone();
+				return this.salt.CloneBytes();
 			}
 			set
 			{
@@ -171,7 +171,7 @@ namespace SecurityDriven.Inferno.Kdf
 				{
 					throw new ArgumentException("Salt is not at least 8 bytes.");
 				}
-				this.salt = (byte[])value.Clone();
+				this.salt = value.CloneBytes();
 				this.Initialize();
 			}
 		}
