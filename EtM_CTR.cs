@@ -39,24 +39,19 @@ namespace SecurityDriven.Inferno
 			if (output.Length - outputOffset < ciphertextLength) throw new ArgumentOutOfRangeException("output", "'output' array segment is not big enough for the ciphertext");
 			try
 			{
-				using (var aes = _aesFactory())
+				_cryptoRandom.NextBytes(_contextBuffer.Value);
+
+				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(_contextBuffer.Value, 0, CONTEXT_TWEAK_LENGTH), derivedOutput: _sessionKey.Value.AsArraySegment(), counter: counter);
+
+				Utils.BlockCopy(_sessionKey.Value, 0, _macKey.Value, 0, MAC_KEY_LENGTH);
+				Utils.BlockCopy(_sessionKey.Value, MAC_KEY_LENGTH, _encKey.Value, 0, ENC_KEY_LENGTH);
+				Utils.BlockCopy(_contextBuffer.Value, 0, output, outputOffset, CONTEXT_BUFFER_LENGTH);
+
+				Utils.BlockCopy(_contextBuffer.Value, CONTEXT_TWEAK_LENGTH, _counterBuffer.Value, 0, NONCE_LENGTH);
+				using (var ctrTransform = new Cipher.AesCtrCryptoTransform(key: _encKey.Value, counterBufferSegment: _counterBuffer.Value.AsArraySegment(), aesFactory: _aesFactory))
 				{
-					aes.Mode = CipherMode.ECB;
-					aes.Padding = PaddingMode.None;
-					_cryptoRandom.NextBytes(_contextBuffer.Value);
-
-					Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(_contextBuffer.Value, 0, CONTEXT_TWEAK_LENGTH), derivedOutput: _sessionKey.Value.AsArraySegment(), counter: counter);
-
-					Utils.BlockCopy(_sessionKey.Value, 0, _macKey.Value, 0, MAC_KEY_LENGTH);
-					Utils.BlockCopy(_sessionKey.Value, MAC_KEY_LENGTH, _encKey.Value, 0, ENC_KEY_LENGTH);
-					Utils.BlockCopy(_contextBuffer.Value, 0, output, outputOffset, CONTEXT_BUFFER_LENGTH);
-
-					Utils.BlockCopy(_contextBuffer.Value, CONTEXT_TWEAK_LENGTH, _counterBuffer.Value, 0, NONCE_LENGTH);
-					using (var ctrTransform = new Cipher.AesCtrCryptoTransform(_encKey.Value, _counterBuffer.Value.AsArraySegment()))
-					{
-						ctrTransform.TransformBlock(inputBuffer: plaintext.Array, inputOffset: plaintext.Offset, inputCount: plaintext.Count, outputBuffer: output, outputOffset: outputOffset + CONTEXT_BUFFER_LENGTH);
-					}// using aesEncryptor
-				}// using aes
+					ctrTransform.TransformBlock(inputBuffer: plaintext.Array, inputOffset: plaintext.Offset, inputCount: plaintext.Count, outputBuffer: output, outputOffset: outputOffset + CONTEXT_BUFFER_LENGTH);
+				}// using aesEncryptor
 
 				using (var hmac = _hmacFactory())
 				{
@@ -96,15 +91,10 @@ namespace SecurityDriven.Inferno
 				if (outputSegment == null) outputSegment = (new byte[cipherLength]).AsNullableArraySegment();
 				Utils.BlockCopy(ciphertext.Array, ciphertext.Offset + CONTEXT_TWEAK_LENGTH, _counterBuffer.Value, 0, NONCE_LENGTH);
 				Utils.BlockCopy(_sessionKey.Value, MAC_KEY_LENGTH, _encKey.Value, 0, ENC_KEY_LENGTH);
-				using (var aes = _aesFactory())
+				using (var ctrTransform = new Cipher.AesCtrCryptoTransform(key: _encKey.Value, counterBufferSegment: _counterBuffer.Value.AsArraySegment(), aesFactory: _aesFactory))
 				{
-					aes.Mode = CipherMode.ECB;
-					aes.Padding = PaddingMode.None;
-					using (var ctrTransform = new Cipher.AesCtrCryptoTransform(_encKey.Value, _counterBuffer.Value.AsArraySegment()))
-					{
-						ctrTransform.TransformBlock(inputBuffer: ciphertext.Array, inputOffset: ciphertext.Offset + CONTEXT_BUFFER_LENGTH, inputCount: cipherLength, outputBuffer: outputSegment.Value.Array, outputOffset: outputSegment.Value.Offset);
-					}// using aesDecryptor
-				}// using aes
+					ctrTransform.TransformBlock(inputBuffer: ciphertext.Array, inputOffset: ciphertext.Offset + CONTEXT_BUFFER_LENGTH, inputCount: cipherLength, outputBuffer: outputSegment.Value.Array, outputOffset: outputSegment.Value.Offset);
+				}// using aesDecryptor
 			}
 			finally { EtM_CTR.ClearKeyMaterial(); }
 		}// Decrypt()
