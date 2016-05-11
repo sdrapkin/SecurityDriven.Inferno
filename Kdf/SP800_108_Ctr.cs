@@ -3,6 +3,8 @@ using System.Security.Cryptography;
 
 namespace SecurityDriven.Inferno.Kdf
 {
+	using Mac;
+
 	/// <remarks>
 	/// Concepts from:
 	/// http://csrc.nist.gov/publications/nistpubs/800-108/sp800-108.pdf
@@ -14,18 +16,18 @@ namespace SecurityDriven.Inferno.Kdf
 
 		internal static byte[] CreateBuffer(ArraySegment<byte>? label, ArraySegment<byte>? context, uint keyLengthInBits)
 		{
-			int labelLength = (label != null) ? label.Value.Count : 0;
-			int contextLength = (context != null) ? context.Value.Count : 0;
+			int labelLength = (label != null) ? label.GetValueOrDefault().Count : 0;
+			int contextLength = (context != null) ? context.GetValueOrDefault().Count : 0;
 			int bufferLength = (COUNTER_LENGTH /* counter */) + (labelLength + 1 /* label + 0x00 */) + (contextLength /* context */) + (KEY_LENGTH /* [L]_2 */);
 			var buffer = new byte[bufferLength];
 
 			// store label, if any
 			if (labelLength > 0)
-				Utils.BlockCopy(label.Value.Array, label.Value.Offset, buffer, COUNTER_LENGTH, labelLength);
+				Utils.BlockCopy(label.GetValueOrDefault().Array, label.GetValueOrDefault().Offset, buffer, COUNTER_LENGTH, labelLength);
 
 			// store context, if any
 			if (contextLength > 0)
-				Utils.BlockCopy(context.Value.Array, context.Value.Offset, buffer, COUNTER_LENGTH + labelLength + 1, contextLength);
+				Utils.BlockCopy(context.GetValueOrDefault().Array, context.GetValueOrDefault().Offset, buffer, COUNTER_LENGTH + labelLength + 1, contextLength);
 
 			// store key length
 			new Utils.IntStruct { UintValue = keyLengthInBits }.ToBEBytes(buffer, bufferLength - KEY_LENGTH);
@@ -46,13 +48,24 @@ namespace SecurityDriven.Inferno.Kdf
 		{
 			int derivedOutputCount = derivedOutput.Count, derivedOutputOffset = derivedOutput.Offset;
 			byte[] K_i = null;
+			HMAC2 keyedHmac2 = keyedHmac as HMAC2;
 			checked
 			{
 				// Calculate each K_i value and copy the leftmost bits to the output buffer as appropriate.
 				for (var counterStruct = new Utils.IntStruct { UintValue = counter }; derivedOutputCount > 0; ++counterStruct.UintValue)
 				{
 					counterStruct.ToBEBytes(bufferSegment.Array, bufferSegment.Offset); // update the counter within the buffer
-					K_i = keyedHmac.ComputeHash(bufferSegment.Array, bufferSegment.Offset, bufferSegment.Count);
+
+					if (keyedHmac2 == null)
+					{
+						K_i = keyedHmac.ComputeHash(bufferSegment.Array, bufferSegment.Offset, bufferSegment.Count);
+					}
+					else
+					{
+						if (counter != counterStruct.UintValue) keyedHmac2.Initialize();
+						keyedHmac2.HashCore(bufferSegment.Array, bufferSegment.Offset, bufferSegment.Count);
+						K_i = keyedHmac2.HashFinal();
+					}
 
 					// copy the leftmost bits of K_i into the output buffer
 					int numBytesToCopy = derivedOutputCount > K_i.Length ? K_i.Length : derivedOutputCount;//Math.Min(derivedOutputCount, K_i.Length);
@@ -61,7 +74,7 @@ namespace SecurityDriven.Inferno.Kdf
 					derivedOutputCount -= numBytesToCopy;
 				}// for
 			}// checked
-			if (K_i != null) Array.Clear(K_i, 0, K_i.Length);
+			if (keyedHmac2 == null && K_i != null) Array.Clear(K_i, 0, K_i.Length); /* clean up needed only when HMAC implementation is not HMAC2 */
 		}// DeriveKey()
 	}// class SP800_108
 }//ns

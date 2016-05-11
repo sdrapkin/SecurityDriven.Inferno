@@ -4,12 +4,15 @@ using System.Security.Cryptography;
 
 namespace SecurityDriven.Inferno.Mac
 {
+	using Extensions;
+
 	public class HMAC2 : HMAC
 	{
+		HashAlgorithm h1, h2;
 		public HMAC2(Func<HashAlgorithm> hashFactory)
 		{
-			var h1 = hashFactory();
-			var h2 = hashFactory();
+			h1 = hashFactory();
+			h2 = hashFactory();
 
 			m_hash1(this, h1);
 			m_hash2(this, h2);
@@ -31,6 +34,23 @@ namespace SecurityDriven.Inferno.Mac
 
 		public new void HashCore(byte[] rgb, int ib, int cb) => base.HashCore(rgb, ib, cb);
 		public new byte[] HashFinal() => base.HashFinal();
+
+		/// <summary>
+		/// Gets or sets the key to use in the hash algorithm.
+		/// </summary>
+		public override byte[] Key
+		{
+			get
+			{
+				return base.KeyValue.CloneBytes();
+			}
+			set
+			{
+				if (value.Length <= this.BlockSizeValue) h1.Initialize();
+				h2.Initialize();
+				base.Key = value;
+			}
+		}
 
 		static readonly Action<HMAC2, HashAlgorithm> m_hash1;
 		static readonly Action<HMAC2, HashAlgorithm> m_hash2;

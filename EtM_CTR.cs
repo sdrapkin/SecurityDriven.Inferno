@@ -93,7 +93,7 @@ namespace SecurityDriven.Inferno
 				Utils.BlockCopy(_sessionKey.Value, MAC_KEY_LENGTH, _encKey.Value, 0, ENC_KEY_LENGTH);
 				using (var ctrTransform = new Cipher.AesCtrCryptoTransform(key: _encKey.Value, counterBufferSegment: _counterBuffer.Value.AsArraySegment(), aesFactory: _aesFactory))
 				{
-					ctrTransform.TransformBlock(inputBuffer: ciphertext.Array, inputOffset: ciphertext.Offset + CONTEXT_BUFFER_LENGTH, inputCount: cipherLength, outputBuffer: outputSegment.Value.Array, outputOffset: outputSegment.Value.Offset);
+					ctrTransform.TransformBlock(inputBuffer: ciphertext.Array, inputOffset: ciphertext.Offset + CONTEXT_BUFFER_LENGTH, inputCount: cipherLength, outputBuffer: outputSegment.GetValueOrDefault().Array, outputOffset: outputSegment.GetValueOrDefault().Offset);
 				}// using aesDecryptor
 			}
 			finally { EtM_CTR.ClearKeyMaterial(); }
@@ -105,7 +105,7 @@ namespace SecurityDriven.Inferno
 			if (cipherLength < 0) return null;
 			var bufferSegment = default(ArraySegment<byte>?);
 			EtM_CTR.Decrypt(masterKey, ciphertext, ref bufferSegment, salt, counter);
-			return (bufferSegment != null) ? bufferSegment.Value.Array : null;
+			return (bufferSegment != null) ? bufferSegment.GetValueOrDefault().Array : null;
 		}// Decrypt()
 
 		public static bool Authenticate(byte[] masterKey, ArraySegment<byte> ciphertext, ArraySegment<byte>? salt = null, uint counter = 1)

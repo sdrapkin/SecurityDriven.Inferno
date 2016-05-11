@@ -24,6 +24,7 @@ namespace SecurityDriven.Inferno.Kdf
 		/// <summary>
 		/// ctor
 		/// </summary>
+		/// <param name="hmacFactory">hmacFactory</param>
 		/// <param name="password">password</param>
 		/// <param name="saltSize">saltSize</param>
 		public PBKDF2(Func<HMAC> hmacFactory, string password, int saltSize)
@@ -34,6 +35,7 @@ namespace SecurityDriven.Inferno.Kdf
 		/// <summary>
 		/// ctor
 		/// </summary>
+		/// <param name="hmacFactory">hmacFactory</param>
 		/// <param name="password">password</param>
 		/// <param name="salt">salt</param>
 		public PBKDF2(Func<HMAC> hmacFactory, string password, byte[] salt)
@@ -44,6 +46,7 @@ namespace SecurityDriven.Inferno.Kdf
 		/// <summary>
 		/// ctor
 		/// </summary>
+		/// <param name="hmacFactory">hmacFactory</param>
 		/// <param name="password">password</param>
 		/// <param name="salt">salt</param>
 		/// <param name="iterations">iterations</param>
@@ -55,6 +58,7 @@ namespace SecurityDriven.Inferno.Kdf
 		/// <summary>
 		/// ctor
 		/// </summary>
+		/// <param name="hmacFactory">hmacFactory</param>
 		/// <param name="password">password</param>
 		/// <param name="saltSize">saltSize</param>
 		/// <param name="iterations">iterations</param>
@@ -66,9 +70,10 @@ namespace SecurityDriven.Inferno.Kdf
 		/// <summary>
 		/// ctor
 		/// </summary>
-		/// <param name="password"></param>
-		/// <param name="salt"></param>
-		/// <param name="iterations"></param>
+		/// <param name="hmacFactory">hmacFactory</param>
+		/// <param name="password">password</param>
+		/// <param name="salt">salt</param>
+		/// <param name="iterations">iterations</param>
 		public PBKDF2(Func<HMAC> hmacFactory, byte[] password, byte[] salt, int iterations)
 		{
 			this.Salt = salt;

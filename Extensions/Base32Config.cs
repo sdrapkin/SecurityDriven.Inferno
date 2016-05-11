@@ -39,7 +39,7 @@ namespace SecurityDriven.Inferno.Extensions
 		{
 			if (this.hashcode == null)
 				this.hashcode = new string(this.Base32table).GetHashCode();
-			return this.hashcode.Value;
+			return this.hashcode.GetValueOrDefault();
 		}
 
 		public override bool Equals(object obj)
