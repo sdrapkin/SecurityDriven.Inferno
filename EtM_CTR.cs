@@ -30,7 +30,6 @@ namespace SecurityDriven.Inferno
 			Array.Clear(_encKey.Value, 0, ENC_KEY_LENGTH);
 			Array.Clear(_macKey.Value, 0, MAC_KEY_LENGTH);
 			Array.Clear(_sessionKey.Value, 0, HMAC_LENGTH);
-			Array.Clear(_counterBuffer.Value, 0, Cipher.AesConstants.AES_BLOCK_SIZE);
 		}
 
 		public static void Encrypt(byte[] masterKey, ArraySegment<byte> plaintext, byte[] output, int outputOffset, ArraySegment<byte>? salt = null, uint counter = 1)
