@@ -158,7 +158,7 @@ namespace SecurityDriven.Inferno
 					buffer[offset + 2] = B3;
 					buffer[offset + 3] = B4;
 				}
-			}// Int2Bytes()
+			}// ToBEBytes()
 		}// IntStruct
 		#endregion
 
@@ -215,7 +215,7 @@ namespace SecurityDriven.Inferno
 					buffer[offset + 6] = B7;
 					buffer[offset + 7] = B8;
 				}
-			}// Long2Bytes()
+			}// ToBEBytes()
 		}// LongStruct
 		#endregion
 
