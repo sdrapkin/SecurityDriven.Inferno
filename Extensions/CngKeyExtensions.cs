@@ -6,6 +6,7 @@ namespace SecurityDriven.Inferno.Extensions
 	public static class CngKeyExtensions
 	{
 		static readonly CngKeyCreationParameters cngKeyCreationParameters = new CngKeyCreationParameters { ExportPolicy = CngExportPolicies.AllowPlaintextExport };
+		static readonly CngProperty exportPolicy_AllowPlaintextExport = new CngProperty("Export Policy", BitConverter.GetBytes((int)CngExportPolicies.AllowPlaintextExport), CngPropertyOptions.None);
 
 		public static CngKey CreateNewDhmKey(string name = null)
 		{
@@ -29,7 +30,9 @@ namespace SecurityDriven.Inferno.Extensions
 
 		public static CngKey ToPrivateKeyFromBlob(this byte[] privateBlob)
 		{
-			return CngKey.Import(privateBlob, CngKeyBlobFormat.EccPrivateBlob);
+			var key = CngKey.Import(privateBlob, CngKeyBlobFormat.EccPrivateBlob);
+			key.SetProperty(exportPolicy_AllowPlaintextExport);
+			return key;
 		}
 
 		public static CngKey ToPublicKeyFromBlob(this byte[] publicBlob)
