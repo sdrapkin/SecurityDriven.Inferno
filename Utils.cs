@@ -293,7 +293,7 @@ namespace SecurityDriven.Inferno
 		public static void Xor(byte[] dest, int destOffset, byte[] left, int leftOffset, byte[] right, int rightOffset, int byteCount)
 		{
 			int i = 0;
-			if ((destOffset & 7) == 0 && (leftOffset & 7) == 0 && (rightOffset & 7) == 0) // all offsets must be multiples of 8 for long-sized xor
+			if (((destOffset | leftOffset | rightOffset) & 7) == 0) // all offsets must be multiples of 8 for long-sized xor
 			{
 				Union destUnion = new Union { Bytes = dest }, leftUnion = new Union { Bytes = left }, rightBuffer = new Union { Bytes = right };
 				int longDestOffset = destOffset >> 3, longLeftOffset = leftOffset >> 3, longRightOffset = rightOffset >> 3, longCount = byteCount >> 3;
@@ -306,7 +306,7 @@ namespace SecurityDriven.Inferno
 		public static void Xor(byte[] dest, int destOffset, byte[] left, int leftOffset, int byteCount)
 		{
 			int i = 0;
-			if ((destOffset & 7) == 0 && (leftOffset & 7) == 0) // all offsets must be multiples of 8 for long-sized xor
+			if (((destOffset | leftOffset) & 7) == 0) // all offsets must be multiples of 8 for long-sized xor
 			{
 				Union destUnion = new Union { Bytes = dest }, leftUnion = new Union { Bytes = left };
 				int longDestOffset = destOffset >> 3, longLeftOffset = leftOffset >> 3, longCount = byteCount >> 3;
