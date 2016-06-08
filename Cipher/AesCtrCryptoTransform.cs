@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Reflection;
 using System.Security.Cryptography;
-using System.Threading;
 
 namespace SecurityDriven.Inferno.Cipher
 {
@@ -15,7 +13,7 @@ namespace SecurityDriven.Inferno.Cipher
 
 	public class AesCtrCryptoTransform : ICryptoTransform
 	{
-		static readonly ThreadLocal<byte[]> _counterBuffer = new ThreadLocal<byte[]>(() => new byte[AesConstants.AES_BLOCK_SIZE]);
+		byte[] counterBuffer = new byte[AesConstants.AES_BLOCK_SIZE];
 
 		Aes aes;
 		readonly ICryptoTransform cryptoTransform;
@@ -35,7 +33,7 @@ namespace SecurityDriven.Inferno.Cipher
 			this.aes.Mode = CipherMode.ECB;
 			this.aes.Padding = PaddingMode.None;
 
-			Utils.BlockCopy(counterBufferSegment.Array, counterBufferSegment.Offset, _counterBuffer.Value, 0, AesConstants.AES_BLOCK_SIZE);
+			Utils.BlockCopy(counterBufferSegment.Array, counterBufferSegment.Offset, counterBuffer, 0, AesConstants.AES_BLOCK_SIZE);
 			this.cryptoTransform = aes.CreateEncryptor(rgbKey: key, rgbIV: null);
 		}// ctor
 
@@ -45,7 +43,7 @@ namespace SecurityDriven.Inferno.Cipher
 			int partialBlockSize = inputCount % AesConstants.AES_BLOCK_SIZE;
 			int fullBlockSize = inputCount & (-AesConstants.AES_BLOCK_SIZE);//inputCount - partialBlockSize;
 			int i, j;
-			byte[] counterBuffer = _counterBuffer.Value; // looks dumb, but local-access is faster than field-access
+			byte[] counterBuffer = this.counterBuffer; // looks dumb, but local-access is faster than field-access
 
 			for (i = outputOffset, /* reusing inputCount as iMax */ inputCount = outputOffset + fullBlockSize; i < inputCount; i += AesConstants.AES_BLOCK_SIZE)
 			{
@@ -90,7 +88,7 @@ namespace SecurityDriven.Inferno.Cipher
 				}
 				finally
 				{
-					Array.Clear(_counterBuffer.Value, 0, AesConstants.AES_BLOCK_SIZE);
+					Array.Clear(counterBuffer, 0, AesConstants.AES_BLOCK_SIZE);
 					this.aes = null;
 				}
 			}
