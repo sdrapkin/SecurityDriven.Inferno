@@ -18,14 +18,8 @@ namespace SecurityDriven.Inferno.Mac
 			m_hash2(this, h2);
 
 			this.HashSizeValue = h1.HashSize;
-			this.BlockSizeValue = h1.InputBlockSize;
-			if (this.BlockSizeValue == 1) // i.e. virtual "InputBlockSize" was not properly overridden & set
-			{
-				if (h1 is SHA512 || h1 is SHA384)
-					this.BlockSizeValue = 128;
-				else if (h1 is SHA256 || h1 is SHA1 || h1 is MD5 || h1 is RIPEMD160)
-					this.BlockSizeValue = 64;
-			}
+			if (h1 is SHA384Cng || h1 is SHA512Cng || h1 is SHA384 || h1 is SHA512)
+				this.BlockSizeValue = 128; // parent HMAC class defaults to 64 bits
 		}
 
 		public HMAC2(Func<HashAlgorithm> hashFactory, byte[] key) : this(hashFactory) { this.Key = key; }
