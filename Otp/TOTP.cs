@@ -29,13 +29,14 @@ namespace SecurityDriven.Inferno.Otp
 			{
 				hmac.Key = secret;
 
-				hmac.HashCore(timestepAsBytes, 0, timestepAsBytes.Length);
+				hmac.TransformBlock(timestepAsBytes, 0, timestepAsBytes.Length, null, 0);
 				if (!String.IsNullOrEmpty(modifier))
 				{
 					byte[] modifierbytes = modifier.ToBytes();
-					hmac.HashCore(modifierbytes, 0, modifierbytes.Length);
+					hmac.TransformBlock(modifierbytes, 0, modifierbytes.Length, null, 0);
 				}
-				hash = hmac.HashFinal(); // do not dispose hmac before 'hash' access --> will zero-out internal array
+                hmac.TransformFinalBlock(timestepAsBytes, 0, 0);
+				hash = hmac.HashInner; // do not dispose hmac before 'hash' access --> will zero-out internal array
 
 				// Generate dynamically-truncated string
 				var offset = hash[hash.Length - 1] & 0x0F;

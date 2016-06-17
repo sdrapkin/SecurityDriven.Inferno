@@ -62,9 +62,9 @@ namespace SecurityDriven.Inferno.Kdf
 					}
 					else
 					{
-						if (counter != counterStruct.UintValue) keyedHmac2.Initialize();
-						keyedHmac2.HashCore(bufferSegment.Array, bufferSegment.Offset, bufferSegment.Count);
-						K_i = keyedHmac2.HashFinal();
+						keyedHmac2.TransformBlock(bufferSegment.Array, bufferSegment.Offset, bufferSegment.Count, null, 0);
+						keyedHmac2.TransformFinalBlock(bufferSegment.Array, 0, 0);
+						K_i = keyedHmac2.HashInner;
 					}
 
 					// copy the leftmost bits of K_i into the output buffer

@@ -55,8 +55,9 @@ namespace SecurityDriven.Inferno
 				using (var hmac = _hmacFactory())
 				{
 					hmac.Key = _macKey.Value;
-					hmac.HashCore(output, outputOffset + CONTEXT_TWEAK_LENGTH, NONCE_LENGTH + plaintext.Count);
-					var fullmac = hmac.HashFinal();
+					hmac.TransformBlock(output, outputOffset + CONTEXT_TWEAK_LENGTH, NONCE_LENGTH + plaintext.Count, null, 0);
+					hmac.TransformFinalBlock(output, 0, 0);
+					var fullmac = hmac.HashInner;
 					Utils.BlockCopy(fullmac, 0, output, outputOffset + ciphertextLength - MAC_LENGTH, MAC_LENGTH);
 				}// using hmac
 			}
@@ -82,8 +83,9 @@ namespace SecurityDriven.Inferno
 				using (var hmac = _hmacFactory())
 				{
 					hmac.Key = _macKey.Value;
-					hmac.HashCore(ciphertext.Array, ciphertext.Offset + CONTEXT_TWEAK_LENGTH, NONCE_LENGTH + cipherLength);
-					var fullmacActual = hmac.HashFinal();
+					hmac.TransformBlock(ciphertext.Array, ciphertext.Offset + CONTEXT_TWEAK_LENGTH, NONCE_LENGTH + cipherLength, null, 0);
+					hmac.TransformFinalBlock(ciphertext.Array, 0, 0);
+					var fullmacActual = hmac.HashInner;
 					if (!Utils.ConstantTimeEqual(fullmacActual, 0, ciphertext.Array, ciphertext.Offset + ciphertext.Count - MAC_LENGTH, MAC_LENGTH)) { outputSegment = null; return; };
 				}// using hmac
 
@@ -118,8 +120,9 @@ namespace SecurityDriven.Inferno
 				using (var hmac = _hmacFactory())
 				{
 					hmac.Key = _macKey.Value;
-					hmac.HashCore(ciphertext.Array, ciphertext.Offset + CONTEXT_TWEAK_LENGTH, NONCE_LENGTH + cipherLength);
-					var fullmacActual = hmac.HashFinal();
+					hmac.TransformBlock(ciphertext.Array, ciphertext.Offset + CONTEXT_TWEAK_LENGTH, NONCE_LENGTH + cipherLength, null, 0);
+					hmac.TransformFinalBlock(ciphertext.Array, 0, 0);
+					var fullmacActual = hmac.HashInner;
 					if (!Utils.ConstantTimeEqual(fullmacActual, 0, ciphertext.Array, ciphertext.Offset + ciphertext.Count - MAC_LENGTH, MAC_LENGTH)) return false;
 				}// using hmac
 				return true;

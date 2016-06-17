@@ -233,4 +233,8 @@ $RECYCLE.BIN/
 *.docx
 *.dgml
 *.rar
-_Doc/SecurityDriven.Inferno.Doc.html
+_Doc/*
+/Mac/HMAC[3-9]*.cs
+/Mac/HMAC2*.cs
+/.vs/config/applicationhost.config
+/Inferno.1.0.0.nuspec

@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 
 namespace SecurityDriven.Inferno.Kdf
 {
+	using Mac;
 	using Extensions;
 
 	public class PBKDF2 : DeriveBytes
@@ -14,6 +15,7 @@ namespace SecurityDriven.Inferno.Kdf
 		uint block, iterations;
 		byte[] buffer, salt;
 		HMAC hmac;
+		HMAC2 hmac2;
 
 		/// <summary>
 		/// Default iteration count.
@@ -79,6 +81,7 @@ namespace SecurityDriven.Inferno.Kdf
 			this.Salt = salt;
 			this.IterationCount = iterations;
 			this.hmac = hmacFactory();
+			this.hmac2 = hmac as HMAC2;
 			this.hmac.Key = password;
 			this.BlockSize = hmac.HashSize / 8;
 			this.Initialize();
@@ -100,7 +103,6 @@ namespace SecurityDriven.Inferno.Kdf
 		/// <param name="disposing">true to release both managed and unmanaged resources; false to release only managed resources.</param>
 		protected override void Dispose(bool disposing)
 		{
-			base.Dispose(disposing);
 			if (disposing)
 			{
 				if (this.hmac != null)
@@ -123,13 +125,21 @@ namespace SecurityDriven.Inferno.Kdf
 		{
 			new Utils.IntStruct { UintValue = this.block }.ToBEBytes(inputBuffer);
 			this.hmac.TransformBlock(inputBuffer: this.salt, inputOffset: 0, inputCount: this.salt.Length, outputBuffer: null, outputOffset: 0);
-			this.hmac.TransformFinalBlock(inputBuffer: inputBuffer, inputOffset: 0, inputCount: inputBuffer.Length);
-			byte[] hash = this.hmac.Hash;
+			this.hmac.TransformBlock(inputBuffer: inputBuffer, inputOffset: 0, inputCount: inputBuffer.Length, outputBuffer: null, outputOffset: 0);
+			this.hmac.TransformFinalBlock(inputBuffer: inputBuffer, inputOffset: 0, inputCount: 0);
+			byte[] hash = this.hmac.Hash; // creates a copy
 			this.hmac.Initialize();
 			byte[] buffer3 = hash;
+
 			for (int i = 2; i <= this.iterations; i++)
 			{
-				hash = this.hmac.ComputeHash(hash);
+				if (hmac2 != null)
+				{
+					hmac2.TransformBlock(hash, 0, BlockSize, null, 0);
+					hmac2.TransformFinalBlock(hash, 0, 0);
+					hash = hmac2.HashInner;
+				}
+				else hash = this.hmac.ComputeHash(hash);
 				Utils.Xor(dest: buffer3, destOffset: 0, left: hash, leftOffset: 0, byteCount: BlockSize);
 			}
 			this.block++;
