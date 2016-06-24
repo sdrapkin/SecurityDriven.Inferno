@@ -32,17 +32,20 @@ namespace SecurityDriven.Inferno
 
 		static void SanityCheck()
 		{
-			var testBuffer = new byte[BYTE_CACHE_SIZE];
+			var testBuffer = new byte[BYTE_CACHE_SIZE / 2];
 			int status, i, j;
+			const int COLLISION_FREE_BLOCK_SIZE = 16;
 
-			status = (int)BCrypt.BCryptGenRandom(testBuffer, BYTE_CACHE_SIZE / 2);
+			status = (int)BCrypt.BCryptGenRandom(testBuffer, testBuffer.Length);
 			if (status != (int)BCrypt.NTSTATUS.STATUS_SUCCESS) throw new CryptographicException(status);
 
-			for (i = BYTE_CACHE_SIZE / 2; i < BYTE_CACHE_SIZE; ++i)
-				if (testBuffer[i] != 0) throw new CryptographicException("CryptoRandom failed sanity check #1.");
-
-			for (i = 0, status = 0, j = BYTE_CACHE_SIZE / 2; i < j; ++i) status |= testBuffer[i];
-			if (status == 0) throw new CryptographicException("CryptoRandom failed sanity check #2.");
+			if (testBuffer.Length < COLLISION_FREE_BLOCK_SIZE * 2) return; // should be compiled away
+			for (i = 0; i < testBuffer.Length - COLLISION_FREE_BLOCK_SIZE; i += COLLISION_FREE_BLOCK_SIZE)
+			{
+				for (j = 0, status = 0; j < COLLISION_FREE_BLOCK_SIZE; ++j)
+					status |= testBuffer[i + j] ^ testBuffer[i + j + COLLISION_FREE_BLOCK_SIZE];
+				if (status == 0) throw new CryptographicException("CryptoRandom failed sanity check #2.");
+			}
 		}// SanityCheck()
 
 		#region NextLong()
