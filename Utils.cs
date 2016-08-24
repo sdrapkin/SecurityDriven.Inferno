@@ -229,7 +229,7 @@ namespace SecurityDriven.Inferno
 		#region Combine byte arrays & segments
 		public static byte[] Combine(ArraySegment<byte> a, ArraySegment<byte> b)
 		{
-			byte[] combinedArray = new byte[a.Count + b.Count];
+			byte[] combinedArray = new byte[checked(a.Count + b.Count)];
 			BlockCopy(a.Array, a.Offset, combinedArray, 0, a.Count);
 			BlockCopy(b.Array, b.Offset, combinedArray, a.Count, b.Count);
 			return combinedArray;
@@ -239,7 +239,7 @@ namespace SecurityDriven.Inferno
 
 		public static byte[] Combine(ArraySegment<byte> a, ArraySegment<byte> b, ArraySegment<byte> c)
 		{
-			byte[] combinedArray = new byte[a.Count + b.Count + c.Count];
+			byte[] combinedArray = new byte[checked(a.Count + b.Count + c.Count)];
 			BlockCopy(a.Array, a.Offset, combinedArray, 0, a.Count);
 			BlockCopy(b.Array, b.Offset, combinedArray, a.Count, b.Count);
 			BlockCopy(c.Array, c.Offset, combinedArray, a.Count + b.Count, c.Count);
@@ -251,7 +251,7 @@ namespace SecurityDriven.Inferno
 		public static byte[] Combine(params byte[][] arrays)
 		{
 			int combinedArrayLength = 0, combinedArrayOffset = 0;
-			for (int i = 0; i < arrays.Length; ++i) combinedArrayLength += arrays[i].Length;
+			for (int i = 0; i < arrays.Length; ++i) checked { combinedArrayLength += arrays[i].Length; }
 			byte[] array, combinedArray = new byte[combinedArrayLength];
 
 			for (int i = 0; i < arrays.Length; ++i)
@@ -266,7 +266,7 @@ namespace SecurityDriven.Inferno
 		public static byte[] Combine(params ArraySegment<byte>[] arraySegments)
 		{
 			int combinedArrayLength = 0, combinedArrayOffset = 0;
-			for (int i = 0; i < arraySegments.Length; ++i) combinedArrayLength += arraySegments[i].Count;
+			for (int i = 0; i < arraySegments.Length; ++i) checked { combinedArrayLength += arraySegments[i].Count; }
 			byte[] combinedArray = new byte[combinedArrayLength];
 
 			for (int i = 0; i < arraySegments.Length; ++i)
