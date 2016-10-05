@@ -74,7 +74,7 @@ namespace SecurityDriven.Inferno
 		public long NextLong(long maxValue)
 		{
 			if (maxValue < 0)
-				throw new ArgumentOutOfRangeException("maxValue");
+				throw new ArgumentOutOfRangeException(nameof(maxValue));
 
 			return NextLong(0, maxValue);
 		}//NextLong()
@@ -96,7 +96,7 @@ namespace SecurityDriven.Inferno
 				return minValue;
 
 			if (minValue > maxValue)
-				throw new ArgumentOutOfRangeException("minValue");
+				throw new ArgumentOutOfRangeException(nameof(minValue));
 
 			ulong diff = decimal.ToUInt64((decimal)maxValue - minValue);
 			ulong upperBound = ulong.MaxValue / diff * diff;
@@ -136,7 +136,7 @@ namespace SecurityDriven.Inferno
 		public override int Next(int maxValue)
 		{
 			if (maxValue < 0)
-				throw new ArgumentOutOfRangeException("maxValue");
+				throw new ArgumentOutOfRangeException(nameof(maxValue));
 
 			return Next(0, maxValue);
 		}//Next()
@@ -158,7 +158,7 @@ namespace SecurityDriven.Inferno
 				return minValue;
 
 			if (minValue > maxValue)
-				throw new ArgumentOutOfRangeException("minValue");
+				throw new ArgumentOutOfRangeException(nameof(minValue));
 
 			long diff = (long)maxValue - minValue;
 			long upperBound = uint.MaxValue / diff * diff;
@@ -180,8 +180,8 @@ namespace SecurityDriven.Inferno
 		/// </returns>
 		public override double NextDouble()
 		{
-			const double max = 1.0 + uint.MaxValue;
-			return GetRandomUInt() / max;
+			const double max = 1L << 53; // https://en.wikipedia.org/wiki/Double-precision_floating-point_format
+			return (GetRandomULong() >> 11) / max;
 		}//NextDouble()
 
 		/// <summary>
@@ -220,7 +220,7 @@ namespace SecurityDriven.Inferno
 			var checkedBufferSegment = new ArraySegment<byte>(buffer, offset, count); // bounds-validation happens here
 			if (count == 0) return;
 			NextBytesInternal(checkedBufferSegment);
-		}
+		}//NextBytes()
 
 		void NextBytesInternal(ArraySegment<byte> bufferSegment)
 		{
@@ -236,36 +236,25 @@ namespace SecurityDriven.Inferno
 				throw new CryptographicException((int)status);
 			}
 
-			while (true)
+			lock (_byteCache)
 			{
-				int currentByteCachePosition = Interlocked.Add(ref _byteCachePosition, count);
-				if (currentByteCachePosition <= BYTE_CACHE_SIZE && currentByteCachePosition > 0)
+				if (_byteCachePosition + count <= BYTE_CACHE_SIZE)
 				{
-					Utils.BlockCopy(_byteCache, currentByteCachePosition - count, buffer, 0, count);
+					Utils.BlockCopy(_byteCache, _byteCachePosition, buffer, offset, count);
+					_byteCachePosition += count;
 					return;
 				}
 
-				lock (_byteCache)
+				status = BCrypt.BCryptGenRandom(_byteCache, BYTE_CACHE_SIZE);
+				if (status == BCrypt.NTSTATUS.STATUS_SUCCESS)
 				{
-					currentByteCachePosition = _byteCachePosition; // atomic read
-					if (currentByteCachePosition > (BYTE_CACHE_SIZE - count) || currentByteCachePosition <= 0)
-					{
-						status = BCrypt.BCryptGenRandom(_byteCache, BYTE_CACHE_SIZE);
-						if (status == BCrypt.NTSTATUS.STATUS_SUCCESS)
-						{
-							_byteCachePosition = count; // atomic write
-							Utils.BlockCopy(_byteCache, 0, buffer, 0, count);
-							return;
-						}
-
-						// defensive logic to prevent _byteCachePosition from wrapping into valid range due to BCryptGenRandom failures
-						if (currentByteCachePosition > BYTE_CACHE_SIZE || currentByteCachePosition < 0) _byteCachePosition = BYTE_CACHE_SIZE;
-
-						throw new CryptographicException((int)status);
-					}// if outside the valid range
-				}// lock
-			}// while(true)
-		}//NextBytes()
+					_byteCachePosition = count;
+					Utils.BlockCopy(_byteCache, 0, buffer, offset, count);
+					return;
+				}
+				throw new CryptographicException((int)status);
+			}// lock
+		}//NextBytesInternal()
 
 		/// <summary>
 		/// Gets one random unsigned 32bit integer in a thread safe manner.
@@ -273,31 +262,24 @@ namespace SecurityDriven.Inferno
 		uint GetRandomUInt()
 		{
 			BCrypt.NTSTATUS status;
-			while (true)
+
+			lock (_byteCache)
 			{
-				int currentByteCachePosition = Interlocked.Add(ref _byteCachePosition, sizeof(uint));
-				if (currentByteCachePosition <= BYTE_CACHE_SIZE && currentByteCachePosition > 0)
-					return BitConverter.ToUInt32(_byteCache, currentByteCachePosition - sizeof(uint));
-
-				lock (_byteCache)
+				if (_byteCachePosition + sizeof(uint) <= BYTE_CACHE_SIZE)
 				{
-					currentByteCachePosition = _byteCachePosition; // atomic read
-					if (currentByteCachePosition > (BYTE_CACHE_SIZE - sizeof(uint)) || currentByteCachePosition <= 0)
-					{
-						status = BCrypt.BCryptGenRandom(_byteCache, BYTE_CACHE_SIZE);
-						if (status == BCrypt.NTSTATUS.STATUS_SUCCESS)
-						{
-							_byteCachePosition = sizeof(uint); // atomic write
-							return BitConverter.ToUInt32(_byteCache, 0);
-						}
+					var result = BitConverter.ToUInt32(_byteCache, _byteCachePosition);
+					_byteCachePosition += sizeof(uint);
+					return result;
+				}
 
-						// defensive logic to prevent _byteCachePosition from wrapping into valid range due to BCryptGenRandom failures
-						if (currentByteCachePosition > BYTE_CACHE_SIZE || currentByteCachePosition < 0) _byteCachePosition = BYTE_CACHE_SIZE;
-
-						throw new CryptographicException((int)status);
-					}// if outside the valid range
-				}// lock
-			}// while(true)
+				status = BCrypt.BCryptGenRandom(_byteCache, BYTE_CACHE_SIZE);
+				if (status == BCrypt.NTSTATUS.STATUS_SUCCESS)
+				{
+					_byteCachePosition = sizeof(uint);
+					return BitConverter.ToUInt32(_byteCache, 0);
+				}
+				throw new CryptographicException((int)status);
+			}// lock
 		}//GetRandomUInt()
 
 		/// <summary>
@@ -306,31 +288,24 @@ namespace SecurityDriven.Inferno
 		ulong GetRandomULong()
 		{
 			BCrypt.NTSTATUS status;
-			while (true)
+
+			lock (_byteCache)
 			{
-				int currentByteCachePosition = Interlocked.Add(ref _byteCachePosition, sizeof(ulong));
-				if (currentByteCachePosition <= BYTE_CACHE_SIZE && currentByteCachePosition > 0)
-					return BitConverter.ToUInt64(_byteCache, currentByteCachePosition - sizeof(ulong));
-
-				lock (_byteCache)
+				if (_byteCachePosition + sizeof(ulong) <= BYTE_CACHE_SIZE)
 				{
-					currentByteCachePosition = _byteCachePosition; // atomic read
-					if (currentByteCachePosition > (BYTE_CACHE_SIZE - sizeof(ulong)) || currentByteCachePosition <= 0)
-					{
-						status = BCrypt.BCryptGenRandom(_byteCache, BYTE_CACHE_SIZE);
-						if (status == BCrypt.NTSTATUS.STATUS_SUCCESS)
-						{
-							_byteCachePosition = sizeof(ulong); // atomic write
-							return BitConverter.ToUInt64(_byteCache, 0);
-						}
+					var result = BitConverter.ToUInt64(_byteCache, _byteCachePosition);
+					_byteCachePosition += sizeof(ulong);
+					return result;
+				}
 
-						// defensive logic to prevent _byteCachePosition from wrapping into valid range due to BCryptGenRandom failures
-						if (currentByteCachePosition > BYTE_CACHE_SIZE || currentByteCachePosition < 0) _byteCachePosition = BYTE_CACHE_SIZE;
-
-						throw new CryptographicException((int)status);
-					}// if outside the valid range
-				}// lock
-			}// while(true)
+				status = BCrypt.BCryptGenRandom(_byteCache, BYTE_CACHE_SIZE);
+				if (status == BCrypt.NTSTATUS.STATUS_SUCCESS)
+				{
+					_byteCachePosition = sizeof(ulong);
+					return BitConverter.ToUInt64(_byteCache, 0);
+				}
+				throw new CryptographicException((int)status);
+			}// lock
 		}//GetRandomULong()
 	}//class CryptoRandom
 

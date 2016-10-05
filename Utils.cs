@@ -55,9 +55,9 @@ namespace SecurityDriven.Inferno
 				throw new ArgumentOutOfRangeException("yOffset", "yOffset < 0");
 			if (length < 0)
 				throw new ArgumentOutOfRangeException("length", "length < 0");
-			if (xOffset + length > x.Length)
+			if (checked(xOffset + length) > x.Length)
 				throw new ArgumentException("xOffset + length > x.Length");
-			if (yOffset + length > y.Length)
+			if (checked(yOffset + length) > y.Length)
 				throw new ArgumentException("yOffset + length > y.Length");
 
 			int differentbits = 0;
@@ -98,9 +98,9 @@ namespace SecurityDriven.Inferno
 				throw new ArgumentOutOfRangeException("yOffset", "yOffset < 0");
 			if (length < 0)
 				throw new ArgumentOutOfRangeException("length", "length < 0");
-			if (xOffset + length > x.Length)
+			if (checked(xOffset + length) > x.Length)
 				throw new ArgumentException("xOffset + length > x.Length");
-			if (yOffset + length > y.Length)
+			if (checked(yOffset + length) > y.Length)
 				throw new ArgumentException("yOffset + length > y.Length");
 
 			int differentbits = 0;

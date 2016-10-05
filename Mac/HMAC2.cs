@@ -68,7 +68,7 @@ namespace SecurityDriven.Inferno.Mac
 			}
 		}// Key
 
-		public string HashName
+		public new string HashName
 		{
 			get
 			{
@@ -103,7 +103,7 @@ namespace SecurityDriven.Inferno.Mac
 		{
 			get
 			{
-				if (hashAlgorithm == null) throw new ObjectDisposedException(null);
+				if (hashAlgorithm == null) throw new ObjectDisposedException(nameof(hashAlgorithm));
 				if (base.State != 0) throw new CryptographicUnexpectedOperationException("Hash must be finalized before the hash value is retrieved.");
 				return base.HashValue.CloneBytes();
 			}

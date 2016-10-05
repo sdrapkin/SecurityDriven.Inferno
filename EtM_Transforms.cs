@@ -28,7 +28,7 @@ namespace SecurityDriven.Inferno
 		/// <summary>ctor</summary>
 		public EtM_EncryptTransform(byte[] key, ArraySegment<byte>? salt = null, uint chunkNumber = 1)
 		{
-			if (key == null) throw new ArgumentNullException("key", "key cannot be null.");
+			if (key == null) throw new ArgumentNullException(nameof(key), nameof(key) + " cannot be null.");
 			this.key = key;
 			this.salt = salt;
 			this.currentChunkNumber = chunkNumber;
@@ -53,7 +53,7 @@ namespace SecurityDriven.Inferno
 						output: outputBuffer,
 						outputOffset: outputOffset + j,
 						salt: this.salt,
-						counter: this.currentChunkNumber++);
+						counter: checked(this.currentChunkNumber++));
 				}
 			}
 			return j;
@@ -104,7 +104,7 @@ namespace SecurityDriven.Inferno
 		/// <summary>ctor</summary>
 		public EtM_DecryptTransform(byte[] key, ArraySegment<byte>? salt = null, uint chunkNumber = 1, bool authenticateOnly = false)
 		{
-			if (key == null) throw new ArgumentNullException("key", "key cannot be null.");
+			if (key == null) throw new ArgumentNullException(nameof(key), nameof(key) + " cannot be null.");
 			this.key = key;
 			this.salt = salt;
 			this.currentChunkNumber = chunkNumber;
@@ -152,7 +152,7 @@ namespace SecurityDriven.Inferno
 						this.key = null;
 						throw new CryptographicException("Decryption failed for block " + this.currentChunkNumber.ToString() + ".");
 					}
-					++this.currentChunkNumber;
+					this.currentChunkNumber = checked(this.currentChunkNumber + 1);
 				}
 			}
 			return j;

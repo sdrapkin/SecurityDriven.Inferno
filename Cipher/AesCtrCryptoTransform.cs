@@ -13,15 +13,16 @@ namespace SecurityDriven.Inferno.Cipher
 
 	public class AesCtrCryptoTransform : ICryptoTransform
 	{
-		byte[] counterBuffer = new byte[AesConstants.AES_BLOCK_SIZE];
+		byte[] counterBuffer_KeyStreamBuffer = new byte[AesConstants.AES_BLOCK_SIZE * 2];
+		int keyStreamBytesRemaining;
 
 		Aes aes;
 		readonly ICryptoTransform cryptoTransform;
 
 		public bool CanReuseTransform { get { return false; } }
 		public bool CanTransformMultipleBlocks { get { return true; } }
-		public int InputBlockSize { get { return AesConstants.AES_BLOCK_SIZE; } }
-		public int OutputBlockSize { get { return AesConstants.AES_BLOCK_SIZE; } }
+		public int InputBlockSize { get { return 1; } }
+		public int OutputBlockSize { get { return 1; } }
 
 		/// <summary>ctor</summary>
 		public AesCtrCryptoTransform(byte[] key, ArraySegment<byte> counterBufferSegment, Func<Aes> aesFactory = null)
@@ -33,39 +34,61 @@ namespace SecurityDriven.Inferno.Cipher
 			this.aes.Mode = CipherMode.ECB;
 			this.aes.Padding = PaddingMode.None;
 
-			Utils.BlockCopy(counterBufferSegment.Array, counterBufferSegment.Offset, counterBuffer, 0, AesConstants.AES_BLOCK_SIZE);
+			Utils.BlockCopy(counterBufferSegment.Array, counterBufferSegment.Offset, counterBuffer_KeyStreamBuffer, 0, AesConstants.AES_BLOCK_SIZE);
 			this.cryptoTransform = aes.CreateEncryptor(rgbKey: key, rgbIV: null);
 		}// ctor
 
 		#region public
 		public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
 		{
-			int partialBlockSize = inputCount % AesConstants.AES_BLOCK_SIZE;
-			int fullBlockSize = inputCount & (-AesConstants.AES_BLOCK_SIZE);//inputCount - partialBlockSize;
-			int i, j;
-			byte[] counterBuffer = this.counterBuffer; // looks dumb, but local-access is faster than field-access
+			if (inputCount == 0) return 0;
 
-			for (i = outputOffset, /* reusing inputCount as iMax */ inputCount = outputOffset + fullBlockSize; i < inputCount; i += AesConstants.AES_BLOCK_SIZE)
+			int i, j, k, remainingInputCount = inputCount;
+			byte[] counterBuffer_KeyStreamBuffer = this.counterBuffer_KeyStreamBuffer; // looks dumb, but local-access is faster than field-access
+
+			// process any available key stream first
+			if (this.keyStreamBytesRemaining > 0)
 			{
-				Utils.BlockCopy(counterBuffer, 0, outputBuffer, i, AesConstants.AES_BLOCK_SIZE);
-				for (j = AesConstants.AES_BLOCK_SIZE - 1; j >= AesConstants.AES_BLOCK_SIZE - AesConstants.COUNTER_SIZE; --j)
-					if (++counterBuffer[j] != 0) break;
+				j = inputCount > this.keyStreamBytesRemaining ? this.keyStreamBytesRemaining : inputCount;
+				for (i = 0; i < j; ++i)
+					outputBuffer[outputOffset + i] = (byte)(counterBuffer_KeyStreamBuffer[AesConstants.AES_BLOCK_SIZE * 2 - this.keyStreamBytesRemaining + i] ^ inputBuffer[inputOffset + i]);
+
+				inputOffset += j;
+				outputOffset += j;
+				this.keyStreamBytesRemaining -= j;
+				remainingInputCount -= j;
+
+				if (remainingInputCount == 0) return inputCount;
 			}
 
+			int partialBlockSize = remainingInputCount % AesConstants.AES_BLOCK_SIZE;
+			int fullBlockSize = remainingInputCount & (-AesConstants.AES_BLOCK_SIZE); // remainingInputCount - partialBlockSize;
+
+			// process full blocks, if any
 			if (fullBlockSize > 0)
 			{
+				for (i = outputOffset, /* reusing k as iMax */ k = outputOffset + fullBlockSize; i < k; i += AesConstants.AES_BLOCK_SIZE)
+				{
+					Utils.BlockCopy(counterBuffer_KeyStreamBuffer, 0, outputBuffer, i, AesConstants.AES_BLOCK_SIZE);
+					for (j = AesConstants.AES_BLOCK_SIZE - 1; j >= AesConstants.AES_BLOCK_SIZE - AesConstants.COUNTER_SIZE; --j) if (++counterBuffer_KeyStreamBuffer[j] != 0) break;
+				}
+
 				fullBlockSize = this.cryptoTransform.TransformBlock(outputBuffer, outputOffset, fullBlockSize, outputBuffer, outputOffset);
-				//for (i = 0; i < fullBlockSize; ++i) outputBuffer[outputOffset + i] ^= inputBuffer[inputOffset + i];
 				Utils.Xor(outputBuffer, outputOffset, inputBuffer, inputOffset, fullBlockSize);
 			}
 
+			// process the remaining partial block, if any
 			if (partialBlockSize > 0)
 			{
-				outputOffset += fullBlockSize;
 				inputOffset += fullBlockSize;
-				this.cryptoTransform.TransformBlock(counterBuffer, 0, AesConstants.AES_BLOCK_SIZE, counterBuffer, 0);
-				for (i = 0; i < partialBlockSize; ++i) outputBuffer[outputOffset + i] = (byte)(counterBuffer[i] ^ inputBuffer[inputOffset + i]);
+				outputOffset += fullBlockSize;
+
+				this.cryptoTransform.TransformBlock(counterBuffer_KeyStreamBuffer, 0, AesConstants.AES_BLOCK_SIZE, counterBuffer_KeyStreamBuffer, AesConstants.AES_BLOCK_SIZE);
+				for (j = AesConstants.AES_BLOCK_SIZE - 1; j >= AesConstants.AES_BLOCK_SIZE - AesConstants.COUNTER_SIZE; --j) if (++counterBuffer_KeyStreamBuffer[j] != 0) break;
+				for (i = 0; i < partialBlockSize; ++i) outputBuffer[outputOffset + i] = (byte)(counterBuffer_KeyStreamBuffer[AesConstants.AES_BLOCK_SIZE + i] ^ inputBuffer[inputOffset + i]);
+				this.keyStreamBytesRemaining = AesConstants.AES_BLOCK_SIZE - partialBlockSize;
 			}
+
 			return inputCount;
 		}// TransformBlock()
 
@@ -88,7 +111,7 @@ namespace SecurityDriven.Inferno.Cipher
 				}
 				finally
 				{
-					Array.Clear(counterBuffer, 0, AesConstants.AES_BLOCK_SIZE);
+					Array.Clear(this.counterBuffer_KeyStreamBuffer, 0, AesConstants.AES_BLOCK_SIZE * 2);
 					this.aes = null;
 				}
 			}

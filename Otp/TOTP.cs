@@ -20,7 +20,7 @@ namespace SecurityDriven.Inferno.Otp
 		// https://tools.ietf.org/html/rfc6238
 		static int ComputeTotp(byte[] secret, long timeStepNumber, int totpLength, string modifier)
 		{
-			if (secret == null) throw new ArgumentNullException("secret");
+			if (secret == null) throw new ArgumentNullException(nameof(secret));
 
 			byte[] timestepAsBytes = new byte[sizeof(long)], hash = null;
 			new Utils.LongStruct { LongValue = timeStepNumber }.ToBEBytes(timestepAsBytes);
@@ -54,7 +54,7 @@ namespace SecurityDriven.Inferno.Otp
 		static long GetCurrentTimeStepNumber(Func<DateTime> timeFactory)
 		{
 			var time = timeFactory();
-			if (time.Kind == DateTimeKind.Local) throw new ArgumentException("DateTime cannot of 'Local' kind.", "timeFactory");
+			if (time.Kind == DateTimeKind.Local) throw new ArgumentException("DateTime cannot of 'Local' kind.", nameof(timeFactory));
 			var deltaTicks = (time - _unixEpoch).Ticks;
 			var timeStepNumber = deltaTicks / _timeStepTicks;
 			//Console.WriteLine(string.Format("Remaining ticks: {0}", TimeSpan.FromTicks(_timeStepTicks - deltaTicks % _timeStepTicks)));

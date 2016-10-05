@@ -4,13 +4,17 @@ namespace SecurityDriven.Inferno.Extensions
 {
 	public static class Base32Extensions
 	{
+		/// <summary>
+		/// Converts a byte array into equivalent Base32-encoded string.
+		/// </summary>
+		/// <remarks>Binary array length must be a multiple of 5.</remarks>
 		public static string ToBase32(this byte[] binary, Base32Config config = null)
 		{
 			int length = binary.Length;
-			int bitLength = length * 8;
+			int bitLength = checked(length * 8);
 			int base32Length = bitLength / 5;
 			if (base32Length * 5 != bitLength)
-				throw new ArgumentOutOfRangeException("binary", "'binary' array length must be a multiple of 5.");
+				throw new ArgumentOutOfRangeException(nameof(binary), $"'{nameof(binary)}' array length must be a multiple of 5.");
 
 			if (config == null)
 				config = Base32Config.Default;
@@ -49,16 +53,20 @@ namespace SecurityDriven.Inferno.Extensions
 			return new string(chArray);
 		}//ToBase32()
 
+		/// <summary>
+		/// Converts a byte array segment into equivalent Base32-encoded string.
+		/// </summary>
+		/// <remarks>Binary segment length must be a multiple of 5.</remarks>
 		public static string ToBase32(this ArraySegment<byte> binarySegment, Base32Config config = null)
 		{
 			byte[] binaryArray = binarySegment.Array;
 			int binaryLength = binarySegment.Count;
 			int binaryOffset = binarySegment.Offset;
 
-			int bitLength = binaryLength * 8;
+			int bitLength = checked(binaryLength * 8);
 			int base32Length = bitLength / 5;
 			if (base32Length * 5 != bitLength)
-				throw new ArgumentOutOfRangeException("binary", "'binary' array length must be a multiple of 5.");
+				throw new ArgumentOutOfRangeException(nameof(binarySegment), $"'{nameof(binarySegment)}' length must be a multiple of 5.");
 
 			if (config == null)
 				config = Base32Config.Default;
@@ -97,12 +105,15 @@ namespace SecurityDriven.Inferno.Extensions
 			return new string(chArray);
 		}//ToBase32()
 
+		/// <summary>
+		/// Converts a Base32-encoded string into equivalent byte array. Does not validate Base32 encoding correctness.
+		/// </summary>
 		public static byte[] FromBase32(this string str32, Base32Config config = null)
 		{
 			int length = str32.Length;
 			int bit5length = length / 8;
 			if (bit5length * 8 != length)
-				throw new ArgumentOutOfRangeException("str32", "'str32' string length must be a multiple of 8.");
+				throw new ArgumentOutOfRangeException(nameof(str32), $"'{nameof(str32)}' string length must be a multiple of 8.");
 
 			if (config == null)
 				config = Base32Config.Default;

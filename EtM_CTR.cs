@@ -35,7 +35,7 @@ namespace SecurityDriven.Inferno
 		public static void Encrypt(byte[] masterKey, ArraySegment<byte> plaintext, byte[] output, int outputOffset, ArraySegment<byte>? salt = null, uint counter = 1)
 		{
 			int ciphertextLength = CONTEXT_BUFFER_LENGTH + plaintext.Count + MAC_LENGTH;
-			if (output.Length - outputOffset < ciphertextLength) throw new ArgumentOutOfRangeException("output", "'output' array segment is not big enough for the ciphertext");
+			if (output.Length - outputOffset < ciphertextLength) throw new ArgumentOutOfRangeException(nameof(output), $"'{nameof(output)}' array segment is not big enough for the ciphertext");
 			try
 			{
 				_cryptoRandom.NextBytes(_contextBuffer.Value);

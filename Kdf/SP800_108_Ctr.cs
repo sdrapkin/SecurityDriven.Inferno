@@ -7,18 +7,18 @@ namespace SecurityDriven.Inferno.Kdf
 
 	/// <remarks>
 	/// Concepts from:
-	/// http://csrc.nist.gov/publications/nistpubs/800-108/sp800-108.pdf
+	/// http://dx.doi.org/10.6028/NIST.SP.800-108
 	/// http://referencesource.microsoft.com/#System.Web/Security/Cryptography/SP800_108.cs
 	/// </remarks>
 	public static class SP800_108_Ctr
 	{
-		const int COUNTER_LENGTH = sizeof(uint), KEY_LENGTH = sizeof(uint);
+		const int COUNTER_LENGTH = sizeof(uint), DERIVED_KEY_LENGTH_LENGTH = sizeof(uint);
 
 		internal static byte[] CreateBuffer(ArraySegment<byte>? label, ArraySegment<byte>? context, uint keyLengthInBits)
 		{
 			int labelLength = (label != null) ? label.GetValueOrDefault().Count : 0;
 			int contextLength = (context != null) ? context.GetValueOrDefault().Count : 0;
-			int bufferLength = (COUNTER_LENGTH /* counter */) + (labelLength + 1 /* label + 0x00 */) + (contextLength /* context */) + (KEY_LENGTH /* [L]_2 */);
+			int bufferLength = (COUNTER_LENGTH /* counter */) + (labelLength + 1 /* label + 0x00 */) + (contextLength /* context */) + (DERIVED_KEY_LENGTH_LENGTH /* [L]_2 */);
 			var buffer = new byte[bufferLength];
 
 			// store label, if any
@@ -30,7 +30,7 @@ namespace SecurityDriven.Inferno.Kdf
 				Utils.BlockCopy(context.GetValueOrDefault().Array, context.GetValueOrDefault().Offset, buffer, COUNTER_LENGTH + labelLength + 1, contextLength);
 
 			// store key length
-			new Utils.IntStruct { UintValue = keyLengthInBits }.ToBEBytes(buffer, bufferLength - KEY_LENGTH);
+			new Utils.IntStruct { UintValue = keyLengthInBits }.ToBEBytes(buffer, bufferLength - DERIVED_KEY_LENGTH_LENGTH);
 			return buffer;
 		}// CreateBuffer()
 

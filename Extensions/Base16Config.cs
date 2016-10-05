@@ -21,7 +21,7 @@ namespace SecurityDriven.Inferno.Extensions
 			}
 
 			if (alphabet.Length != BASE)
-				throw new ArgumentOutOfRangeException("alphabet", "'alphabet' array must have exactly " + BASE + " characters.");
+				throw new ArgumentOutOfRangeException(nameof(alphabet), $"'{nameof(alphabet)}' array must have exactly {BASE.ToString()} characters.");
 
 			this.Base16table = alphabet;
 

@@ -22,7 +22,7 @@ namespace SecurityDriven.Inferno.Extensions
 		{
 			int byteCount = bytes.Length;
 			if (byteCount % 2 != 0)
-				throw new ArgumentException("bytes", "'bytes' array must have even number of bytes");
+				throw new ArgumentException($"'{nameof(bytes)}' array must have even number of bytes", nameof(bytes));
 
 			char[] chars = new char[byteCount / 2];
 			for (int i = 0; i < chars.Length; ++i)
@@ -39,7 +39,7 @@ namespace SecurityDriven.Inferno.Extensions
 			int bytesOffset = bytesSegment.Offset;
 
 			if (bytesLength % 2 != 0)
-				throw new ArgumentException("bytesSegment", "'bytesSegment' must have even number of bytes");
+				throw new ArgumentException($"'{nameof(bytesSegment)}' must have even number of bytes", nameof(bytesSegment));
 
 			char[] chars = new char[bytesLength / 2];
 			for (int i = 0; i < chars.Length; ++i)

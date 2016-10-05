@@ -84,7 +84,7 @@ namespace SecurityDriven.Inferno.Extensions
 		public static byte[] FromB64(this string input)
 		{
 			if (input == null)
-				throw new ArgumentNullException("input");
+				throw new ArgumentNullException(nameof(input));
 
 			int len = input.Length;
 			if (len < 1)

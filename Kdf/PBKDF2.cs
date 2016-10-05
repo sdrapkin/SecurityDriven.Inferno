@@ -90,7 +90,7 @@ namespace SecurityDriven.Inferno.Kdf
 		static byte[] GenerateSalt(int saltSize)
 		{
 			if (saltSize < 0)
-				throw new ArgumentOutOfRangeException("saltSize");
+				throw new ArgumentOutOfRangeException(nameof(saltSize));
 
 			byte[] data = new byte[saltSize];
 			rng.NextBytes(data);
@@ -160,7 +160,7 @@ namespace SecurityDriven.Inferno.Kdf
 			{
 				if (value <= 0)
 				{
-					throw new ArgumentOutOfRangeException("value");
+					throw new ArgumentOutOfRangeException(nameof(value));
 				}
 				this.iterations = (uint)value;
 				this.Initialize();
@@ -180,7 +180,7 @@ namespace SecurityDriven.Inferno.Kdf
 			{
 				if (value == null)
 				{
-					throw new ArgumentNullException("value");
+					throw new ArgumentNullException(nameof(value));
 				}
 				if (value.Length < 8)
 				{
@@ -201,7 +201,7 @@ namespace SecurityDriven.Inferno.Kdf
 		{
 			if (cb <= 0)
 			{
-				throw new ArgumentOutOfRangeException("cb", "Positive number required.");
+				throw new ArgumentOutOfRangeException(nameof(cb), "Positive number required.");
 			}
 			byte[] dst = new byte[cb];
 			int dstOffsetBytes = 0;

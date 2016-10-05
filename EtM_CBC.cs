@@ -52,7 +52,7 @@ namespace SecurityDriven.Inferno
 			int finalBlockLength = plaintext.Count % Cipher.AesConstants.AES_BLOCK_SIZE;
 			int paddingLength = Cipher.AesConstants.AES_BLOCK_SIZE - finalBlockLength;
 			int ciphertextLength = CONTEXT_BUFFER_LENGTH + plaintext.Count + paddingLength + MAC_LENGTH;
-			if (output.Length - outputOffset < ciphertextLength) throw new ArgumentOutOfRangeException("output", "'output' array segment is not big enough for the ciphertext");
+			if (output.Length - outputOffset < ciphertextLength) throw new ArgumentOutOfRangeException(nameof(output), $"'{nameof(output)}' array segment is not big enough for the ciphertext");
 
 			try
 			{

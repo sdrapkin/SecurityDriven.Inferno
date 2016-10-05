@@ -238,3 +238,5 @@ _Doc/*
 /Mac/HMAC2*.cs
 /.vs/config/applicationhost.config
 /Inferno.1.0.0.nuspec
+/COMMITS.md
+*.snk
