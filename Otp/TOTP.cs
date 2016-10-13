@@ -9,7 +9,7 @@ namespace SecurityDriven.Inferno.Otp
 
 	public static class TOTP
 	{
-		static readonly DateTime _unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+		internal static readonly DateTime _unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 		static readonly long _timeStepTicks = TimeSpan.FromSeconds(30).Ticks;
 		static readonly Func<HMAC2> _hmacFactory = HMACFactories.HMACSHA1;
 		static readonly Func<DateTime> _timeFactory = () => DateTime.UtcNow;
@@ -35,7 +35,7 @@ namespace SecurityDriven.Inferno.Otp
 					byte[] modifierbytes = modifier.ToBytes();
 					hmac.TransformBlock(modifierbytes, 0, modifierbytes.Length, null, 0);
 				}
-                hmac.TransformFinalBlock(timestepAsBytes, 0, 0);
+				hmac.TransformFinalBlock(timestepAsBytes, 0, 0);
 				hash = hmac.HashInner; // do not dispose hmac before 'hash' access --> will zero-out internal array
 
 				// Generate dynamically-truncated string
@@ -50,20 +50,32 @@ namespace SecurityDriven.Inferno.Otp
 			}//using
 		}//ComputeTotp()
 
-		//https://tools.ietf.org/html/rfc6238#section-4
-		static long GetCurrentTimeStepNumber(Func<DateTime> timeFactory)
+		static long GetCurrentTimeDeltaInTicks(Func<DateTime> timeFactory)
 		{
 			var time = timeFactory();
 			if (time.Kind == DateTimeKind.Local) throw new ArgumentException("DateTime cannot of 'Local' kind.", nameof(timeFactory));
-			var deltaTicks = (time - _unixEpoch).Ticks;
-			var timeStepNumber = deltaTicks / _timeStepTicks;
-			//Console.WriteLine(string.Format("Remaining ticks: {0}", TimeSpan.FromTicks(_timeStepTicks - deltaTicks % _timeStepTicks)));
+			if (time < _unixEpoch) throw new ArgumentOutOfRangeException(nameof(timeFactory), $"DateTime cannot be less than {_unixEpoch.ToString()}.");
+			long deltaTicks = (time - _unixEpoch).Ticks;
+			return deltaTicks;
+		}//GetCurrentTimeDeltaInTicks()
 
+		//https://tools.ietf.org/html/rfc6238#section-4
+		static long GetCurrentTimeStepNumber(Func<DateTime> timeFactory)
+		{
+			var deltaTicks = GetCurrentTimeDeltaInTicks(timeFactory);
+			var timeStepNumber = deltaTicks / _timeStepTicks;
 			return timeStepNumber;
 		}//GetCurrentTimeStepNumber()
 		#endregion
 
 		#region public
+		public static DateTime GetExpiryTime(Func<DateTime> timeFactory = null)
+		{
+			if (timeFactory == null) timeFactory = _timeFactory;
+			long nextTimeStep = checked(GetCurrentTimeStepNumber(timeFactory) + 1);
+			return _unixEpoch.AddTicks(checked(nextTimeStep * _timeStepTicks));
+		}//GetExpiryTime()
+
 		public static int GenerateTOTP(byte[] secret, Func<DateTime> timeFactory = null, int totpLength = DEFAULT_TOTP_LENGTH, string modifier = null)
 		{
 			if (timeFactory == null) timeFactory = _timeFactory;
