@@ -11,8 +11,8 @@ namespace SecurityDriven.Inferno.Kdf
 	{
 		// Fields
 		static readonly CryptoRandom rng = new CryptoRandom();
-		int BlockSize, endIndex, startIndex;
-		uint block, iterations;
+		int BlockSize, endIndex, startIndex, iterations;
+		uint block;
 		byte[] buffer, salt;
 		HMAC hmac;
 		HMAC2 hmac2;
@@ -154,7 +154,7 @@ namespace SecurityDriven.Inferno.Kdf
 		{
 			get
 			{
-				return (int)this.iterations;
+				return this.iterations;
 			}
 			set
 			{
@@ -162,7 +162,7 @@ namespace SecurityDriven.Inferno.Kdf
 				{
 					throw new ArgumentOutOfRangeException(nameof(value));
 				}
-				this.iterations = (uint)value;
+				this.iterations = value;
 				this.Initialize();
 			}
 		}
