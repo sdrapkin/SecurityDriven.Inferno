@@ -43,6 +43,7 @@ namespace SecurityDriven.Inferno
 		#endregion
 
 		#region ConstantTimeEqual() - byte arrays & ArraySegments
+		/// <exception cref="System.NullReferenceException">Thrown when either array is null.</exception>
 		[MethodImpl(MethodImplOptions.NoOptimization)]
 		public static bool ConstantTimeEqual(byte[] x, int xOffset, byte[] y, int yOffset, int length)
 		{
@@ -77,6 +78,7 @@ namespace SecurityDriven.Inferno
 			return ConstantTimeEqual(x.Array, x.Offset, y.Array, y.Offset, xCount);
 		}// ConstantTimeEqual()
 
+		/// <exception cref="System.NullReferenceException">Thrown when either array is null.</exception>
 		public static bool ConstantTimeEqual(byte[] x, byte[] y)
 		{
 			int xLength = x.Length;
@@ -111,6 +113,7 @@ namespace SecurityDriven.Inferno
 			return differentbits == 0;
 		}// ConstantTimeEqual()
 
+		/// <exception cref="System.NullReferenceException">Thrown when either string is null.</exception>
 		public static bool ConstantTimeEqual(string x, string y)
 		{
 			int xLength = x.Length;
@@ -142,6 +145,7 @@ namespace SecurityDriven.Inferno
 			/// <summary>
 			/// To Big-Endian
 			/// </summary>
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			public void ToBEBytes(byte[] buffer, int offset = 0)
 			{
 				if (BitConverter.IsLittleEndian)
@@ -191,6 +195,7 @@ namespace SecurityDriven.Inferno
 			/// <summary>
 			/// To Big-Endian
 			/// </summary>
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			public void ToBEBytes(byte[] buffer, int offset = 0)
 			{
 				if (BitConverter.IsLittleEndian)
@@ -280,7 +285,7 @@ namespace SecurityDriven.Inferno
 		#endregion
 
 		#region Xor
-		[StructLayout(LayoutKind.Explicit)]
+		[StructLayout(LayoutKind.Explicit, Pack = 1)]
 		struct Union
 		{
 			[FieldOffset(0)]
@@ -290,6 +295,7 @@ namespace SecurityDriven.Inferno
 			public long[] Longs;
 		}// struct Union
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void Xor(byte[] dest, int destOffset, byte[] left, int leftOffset, byte[] right, int rightOffset, int byteCount)
 		{
 			int i = 0;
@@ -303,6 +309,7 @@ namespace SecurityDriven.Inferno
 			for (; i < byteCount; ++i) dest[destOffset + i] = (byte)(left[leftOffset + i] ^ right[rightOffset + i]);
 		}// Xor()
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void Xor(byte[] dest, int destOffset, byte[] left, int leftOffset, int byteCount)
 		{
 			int i = 0;
