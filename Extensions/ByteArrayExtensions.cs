@@ -1,7 +1,10 @@
-﻿namespace SecurityDriven.Inferno.Extensions
+﻿using System.Runtime.CompilerServices;
+
+namespace SecurityDriven.Inferno.Extensions
 {
 	internal static class ByteArrayExtensions
 	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		internal static byte[] CloneBytes(this byte[] bytes)
 		{
 			var clone = new byte[bytes.Length];
@@ -9,6 +12,7 @@
 			return clone;
 		}//Clone()
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		internal static byte[] CloneBytes(this byte[] bytes, int offset, int count)
 		{
 			var clone = new byte[count];

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Security.Cryptography;
 
 namespace SecurityDriven.Inferno.Mac
 {

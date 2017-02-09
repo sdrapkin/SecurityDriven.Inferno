@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace SecurityDriven.Inferno
 {
-	using SecurityDriven.Inferno.Cipher;
+	using Cipher;
+
 	public static class EtM_Transform_Constants
 	{
 		const int LOH_THRESHOLD = 85000 - 1;
@@ -79,6 +81,7 @@ namespace SecurityDriven.Inferno
 			return outputBuffer;
 		}// TransformFinalBlock()
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Dispose()
 		{
 			this.key = null;
@@ -195,6 +198,7 @@ namespace SecurityDriven.Inferno
 			return outputBuffer;
 		}// TransformFinalBlock()
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Dispose()
 		{
 			this.key = null;

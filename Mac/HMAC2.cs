@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 
 namespace SecurityDriven.Inferno.Mac
 {
@@ -38,12 +39,14 @@ namespace SecurityDriven.Inferno.Mac
 			base.KeyValue = new byte[blockSizeValue * 3];
 		}// ctor
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public HMAC2(Func<HashAlgorithm> hashFactory, byte[] key) : this(hashFactory) { this.Key = key; }
 		#endregion
 
 		#region overrides
 		public override byte[] Key
 		{
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			get { return base.KeyValue.CloneBytes(0, keyLength); }
 			set
 			{
@@ -139,6 +142,7 @@ namespace SecurityDriven.Inferno.Mac
 			return (base.HashValue = _HashValue_Getter(hashAlgorithm));
 		}// HashFinal()
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Initialize()
 		{
 			hashAlgorithm.Initialize();
@@ -147,6 +151,10 @@ namespace SecurityDriven.Inferno.Mac
 		}// Initialize()
 		#endregion overrides
 
-		public byte[] HashInner => base.HashValue;
+		public byte[] HashInner
+		{
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get { return base.HashValue; }
+		}// HashInner
 	}// HMAC2 class
 }//ns

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading;
 
@@ -39,6 +40,7 @@ namespace SecurityDriven.Inferno
 			aes.Padding = PaddingMode.PKCS7;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static void ClearKeyMaterial()
 		{
 			Array.Clear(_encKey.Value, 0, ENC_KEY_LENGTH);

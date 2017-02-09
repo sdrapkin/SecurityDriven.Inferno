@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace SecurityDriven.Inferno.Kdf
@@ -38,6 +39,7 @@ namespace SecurityDriven.Inferno.Kdf
 			Reset();
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Reset()
 		{
 			k = Utils.ZeroLengthArray<byte>.Value;
@@ -45,6 +47,7 @@ namespace SecurityDriven.Inferno.Kdf
 			counter = 0;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		protected override void Dispose(bool disposing)
 		{
 			if (hmac != null)
