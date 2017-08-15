@@ -236,7 +236,7 @@ $RECYCLE.BIN/
 _Doc/*
 /Mac/HMAC[3-9]*.cs
 /Mac/HMAC2*.cs
-/.vs/config/applicationhost.config
+/.vs/*
 /Inferno.1.0.0.nuspec
 /COMMITS.md
 *.snk
