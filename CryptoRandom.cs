@@ -201,7 +201,7 @@ namespace SecurityDriven.Inferno
 		/// <exception cref="T:System.ArgumentNullException">
 		///     <paramref name="buffer"/> is null.
 		/// </exception>
-		public override void NextBytes(byte[] buffer)
+		public new void NextBytes(byte[] buffer)
 		{
 			NextBytes(buffer, 0, buffer.Length);
 		}//NextBytes()
