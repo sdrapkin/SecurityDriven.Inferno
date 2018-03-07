@@ -196,15 +196,18 @@ namespace SecurityDriven.Inferno
 			return bytes;
 		}//NextBytes()
 
-		/// <summary>Fills the elements of a specified array of bytes with random numbers.</summary>
+		// Inherited from Random. We must override this one to prevent inherited Random.NextBytes from ever getting called.
+		// Not overriding the inherited "NextBytes" and instead hiding it via "public new NextBytes(buffer)"
+		// would create a security vulnerability - don't be tempted.
+		/// <summary>
+		/// Fills the elements of a specified array of bytes with random numbers.
+		/// Use "NextBytes(buffer,offset,count)" for a bit more performance (non-virtual).
+		/// </summary>
 		/// <param name="buffer">The array to fill with cryptographically strong random bytes.</param>
 		/// <exception cref="T:System.ArgumentNullException">
 		///     <paramref name="buffer"/> is null.
 		/// </exception>
-		public new void NextBytes(byte[] buffer)
-		{
-			NextBytes(buffer, 0, buffer.Length);
-		}//NextBytes()
+		public override void NextBytes(byte[] buffer) => NextBytes(buffer, 0, buffer.Length);
 
 		/// <summary>
 		/// Fills the specified byte array with a cryptographically strong random sequence of values.
