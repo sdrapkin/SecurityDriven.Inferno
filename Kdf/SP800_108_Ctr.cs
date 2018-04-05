@@ -23,11 +23,29 @@ namespace SecurityDriven.Inferno.Kdf
 
 			// store label, if any
 			if (labelLength > 0)
-				Utils.BlockCopy(label.GetValueOrDefault().Array, label.GetValueOrDefault().Offset, buffer, COUNTER_LENGTH, labelLength);
+			{
+				var labelSegment = label.GetValueOrDefault();
+				var labelSegmentArray = labelSegment.Array;
+				var labelSegmentOffset = labelSegment.Offset;
+
+				if (labelLength > Extensions.ByteArrayExtensions.SHORT_BYTECOPY_THRESHOLD)
+					Utils.BlockCopy(labelSegmentArray, labelSegmentOffset, buffer, COUNTER_LENGTH, labelLength);
+				else
+					for (int i = 0; i < labelLength; ++i) buffer[COUNTER_LENGTH + i] = labelSegmentArray[labelSegmentOffset + i];
+			}
 
 			// store context, if any
 			if (contextLength > 0)
-				Utils.BlockCopy(context.GetValueOrDefault().Array, context.GetValueOrDefault().Offset, buffer, COUNTER_LENGTH + labelLength + 1, contextLength);
+			{
+				var contextSegment = context.GetValueOrDefault();
+				var contextSegmentArray = contextSegment.Array;
+				var contextSegmentOffset = contextSegment.Offset;
+
+				if (contextLength > Extensions.ByteArrayExtensions.SHORT_BYTECOPY_THRESHOLD)
+					Utils.BlockCopy(contextSegment.Array, contextSegment.Offset, buffer, COUNTER_LENGTH + labelLength + 1, contextLength);
+				else
+					for (int i = 0; i < contextLength; ++i) buffer[COUNTER_LENGTH + labelLength + 1 + i] = contextSegmentArray[contextSegmentOffset + i];
+			}
 
 			// store key length
 			new Utils.IntStruct { UintValue = keyLengthInBits }.ToBEBytes(buffer, bufferLength - DERIVED_KEY_LENGTH_LENGTH);
@@ -47,6 +65,7 @@ namespace SecurityDriven.Inferno.Kdf
 		internal static void DeriveKey(HMAC keyedHmac, ArraySegment<byte> bufferSegment, ArraySegment<byte> derivedOutput, uint counter = 1)
 		{
 			int derivedOutputCount = derivedOutput.Count, derivedOutputOffset = derivedOutput.Offset;
+			var derivedOutputArray = derivedOutput.Array;
 			byte[] K_i = null;
 			HMAC2 keyedHmac2 = keyedHmac as HMAC2;
 			checked
@@ -69,7 +88,10 @@ namespace SecurityDriven.Inferno.Kdf
 
 					// copy the leftmost bits of K_i into the output buffer
 					int numBytesToCopy = derivedOutputCount > K_i.Length ? K_i.Length : derivedOutputCount;//Math.Min(derivedOutputCount, K_i.Length);
-					Utils.BlockCopy(K_i, 0, derivedOutput.Array, derivedOutputOffset, numBytesToCopy);
+
+					//Utils.BlockCopy(K_i, 0, derivedOutput.Array, derivedOutputOffset, numBytesToCopy);
+					for (int i = 0; i < numBytesToCopy; ++i) derivedOutputArray[derivedOutputOffset + i] = K_i[i];
+
 					derivedOutputOffset += numBytesToCopy;
 					derivedOutputCount -= numBytesToCopy;
 				}// for

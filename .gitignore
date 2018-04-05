@@ -240,3 +240,4 @@ _Doc/*
 /Inferno.1.0.0.nuspec
 /COMMITS.md
 *.snk
+/Cipher/AesPool.cs

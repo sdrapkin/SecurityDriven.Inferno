@@ -9,7 +9,7 @@ namespace SecurityDriven.Inferno
 {
 	public static class Utils
 	{
-		internal static readonly bool AllowOnlyFipsAlgorithms = true; // cache the FIPS flag
+		internal const bool AllowOnlyFipsAlgorithms = true; // cache the FIPS flag
 
 		public static readonly UTF8Encoding SafeUTF8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
@@ -224,12 +224,7 @@ namespace SecurityDriven.Inferno
 		}// LongStruct
 		#endregion
 
-		internal static class ZeroLengthArray<T> { public static readonly T[] Value = new T[0]; } // helps avoid unnecessary memory allocation
-
-		internal static readonly Action<Array, int, Array, int, int> BlockCopy = Delegate.CreateDelegate(
-			typeof(Action<Array, int, Array, int, int>),
-			typeof(Buffer).GetMethod("InternalBlockCopy", BindingFlags.NonPublic | BindingFlags.Static))
-			as Action<Array, int, Array, int, int>;
+		internal static readonly Action<Array, int, Array, int, int> BlockCopy = Buffer.BlockCopy;
 
 		#region Combine byte arrays & segments
 		public static byte[] Combine(ArraySegment<byte> a, ArraySegment<byte> b)
@@ -286,7 +281,7 @@ namespace SecurityDriven.Inferno
 
 		#region Xor
 		[StructLayout(LayoutKind.Explicit, Pack = 1)]
-		struct Union
+		internal struct Union
 		{
 			[FieldOffset(0)]
 			public byte[] Bytes;
@@ -299,11 +294,11 @@ namespace SecurityDriven.Inferno
 		public static void Xor(byte[] dest, int destOffset, byte[] left, int leftOffset, byte[] right, int rightOffset, int byteCount)
 		{
 			int i = 0;
-			if (((destOffset | leftOffset | rightOffset) & 7) == 0) // all offsets must be multiples of 8 for long-sized xor
+			if ((byteCount > Extensions.ByteArrayExtensions.SHORT_BYTECOPY_THRESHOLD) && (((destOffset | leftOffset | rightOffset) & 7) == 0)) // all offsets must be multiples of 8 for long-sized xor
 			{
-				Union destUnion = new Union { Bytes = dest }, leftUnion = new Union { Bytes = left }, rightBuffer = new Union { Bytes = right };
+				long[] destUnionLongs = new Union { Bytes = dest }.Longs, leftUnionLongs = new Union { Bytes = left }.Longs, rightUnionLongs = new Union { Bytes = right }.Longs;
 				int longDestOffset = destOffset >> 3, longLeftOffset = leftOffset >> 3, longRightOffset = rightOffset >> 3, longCount = byteCount >> 3;
-				for (; i < longCount; ++i) destUnion.Longs[longDestOffset + i] = leftUnion.Longs[longLeftOffset + i] ^ rightBuffer.Longs[longRightOffset + i];
+				for (; i < longCount; ++i) destUnionLongs[longDestOffset + i] = leftUnionLongs[longLeftOffset + i] ^ rightUnionLongs[longRightOffset + i];
 				i = longCount << 3;
 			}
 			for (; i < byteCount; ++i) dest[destOffset + i] = (byte)(left[leftOffset + i] ^ right[rightOffset + i]);
@@ -313,11 +308,11 @@ namespace SecurityDriven.Inferno
 		public static void Xor(byte[] dest, int destOffset, byte[] left, int leftOffset, int byteCount)
 		{
 			int i = 0;
-			if (((destOffset | leftOffset) & 7) == 0) // all offsets must be multiples of 8 for long-sized xor
+			if ((byteCount > Extensions.ByteArrayExtensions.SHORT_BYTECOPY_THRESHOLD) && (((destOffset | leftOffset) & 7) == 0)) // all offsets must be multiples of 8 for long-sized xor
 			{
-				Union destUnion = new Union { Bytes = dest }, leftUnion = new Union { Bytes = left };
+				long[] destUnionLongs = new Union { Bytes = dest }.Longs, leftUnionLongs = new Union { Bytes = left }.Longs;
 				int longDestOffset = destOffset >> 3, longLeftOffset = leftOffset >> 3, longCount = byteCount >> 3;
-				for (; i < longCount; ++i) destUnion.Longs[longDestOffset + i] ^= leftUnion.Longs[longLeftOffset + i];
+				for (; i < longCount; ++i) destUnionLongs[longDestOffset + i] ^= leftUnionLongs[longLeftOffset + i];
 				i = longCount << 3;
 			}
 			for (; i < byteCount; ++i) dest[destOffset + i] ^= left[leftOffset + i];

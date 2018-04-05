@@ -93,7 +93,7 @@ namespace SecurityDriven.Inferno.Kdf
 				throw new ArgumentOutOfRangeException(nameof(saltSize));
 
 			byte[] data = new byte[saltSize];
-			rng.NextBytes(data);
+			rng.NextBytes(data, 0, data.Length);
 			return data;
 		}//GenerateSalt()
 

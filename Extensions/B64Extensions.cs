@@ -88,7 +88,7 @@ namespace SecurityDriven.Inferno.Extensions
 
 			int len = input.Length;
 			if (len < 1)
-				return Utils.ZeroLengthArray<byte>.Value;
+				return Array.Empty<byte>();
 
 			///////////////////////////////////////////////////////////////////
 			// Step 1: Calculate the number of padding chars to append to this string.

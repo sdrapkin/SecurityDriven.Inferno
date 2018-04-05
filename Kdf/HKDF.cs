@@ -42,7 +42,7 @@ namespace SecurityDriven.Inferno.Kdf
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Reset()
 		{
-			k = Utils.ZeroLengthArray<byte>.Value;
+			k = Array.Empty<byte>();
 			k_unused = 0;
 			counter = 0;
 		}

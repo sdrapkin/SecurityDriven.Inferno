@@ -47,7 +47,12 @@ namespace SecurityDriven.Inferno.Mac
 		public override byte[] Key
 		{
 			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get { return base.KeyValue.CloneBytes(0, keyLength); }
+			get
+			{
+				var keyValueClone = new byte[keyLength];
+				for (int i = 0; i < keyValueClone.Length; ++i) keyValueClone[i] = base.KeyValue[i];
+				return keyValueClone;
+			}
 			set
 			{
 				if (isHashing) throw new CryptographicException("Hash key cannot be changed after the first write to the stream.");
@@ -61,7 +66,9 @@ namespace SecurityDriven.Inferno.Mac
 					hashAlgorithm.Initialize();
 				}
 				keyLength = value.Length;
+
 				Utils.BlockCopy(value, 0, base.KeyValue, 0, keyLength);
+				//for (int i = 0; i < keyLength; ++i) base.KeyValue[i] = value[i];
 
 				if (isRekeying) Array.Clear(base.KeyValue, keyLength, blockSizeValue - keyLength);
 				else isRekeying = true;
@@ -108,7 +115,11 @@ namespace SecurityDriven.Inferno.Mac
 			{
 				if (hashAlgorithm == null) throw new ObjectDisposedException(nameof(hashAlgorithm));
 				if (base.State != 0) throw new CryptographicUnexpectedOperationException("Hash must be finalized before the hash value is retrieved.");
-				return base.HashValue.CloneBytes();
+
+				var hashValue = base.HashValue;
+				var hashValueClone = new byte[hashValue.Length];
+				for (int i = 0; i < hashValueClone.Length; ++i) hashValueClone[i] = hashValue[i];
+				return hashValueClone;
 			}
 		}// Hash
 

@@ -180,7 +180,7 @@ namespace SecurityDriven.Inferno
 					ciphertext: cipherText,
 					salt: this.salt,
 					counter: this.currentChunkNumber))
-					outputBuffer = Utils.ZeroLengthArray<byte>.Value;
+					outputBuffer = Array.Empty<byte>();
 			}
 			else
 			{

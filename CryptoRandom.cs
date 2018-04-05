@@ -192,7 +192,7 @@ namespace SecurityDriven.Inferno
 		public byte[] NextBytes(int count)
 		{
 			byte[] bytes = new byte[count];
-			this.NextBytes(bytes);
+			this.NextBytes(bytes, 0, count);
 			return bytes;
 		}//NextBytes()
 

@@ -40,27 +40,42 @@ namespace SecurityDriven.Inferno
 			if (output.Length - outputOffset < ciphertextLength) throw new ArgumentOutOfRangeException(nameof(output), $"'{nameof(output)}' array segment is not big enough for the ciphertext");
 			try
 			{
-				_cryptoRandom.NextBytes(_contextBuffer.Value);
+				var counterBuffer = _counterBuffer.Value;
+				var contextBuffer = _contextBuffer.Value;
+				var encKey = _encKey.Value;
+				var macKey = _macKey.Value;
+				var sessionKey = _sessionKey.Value;
 
-				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(_contextBuffer.Value, 0, CONTEXT_TWEAK_LENGTH), derivedOutput: _sessionKey.Value.AsArraySegment(), counter: counter);
+				_cryptoRandom.NextBytes(contextBuffer, 0, CONTEXT_BUFFER_LENGTH);
 
-				Utils.BlockCopy(_sessionKey.Value, 0, _macKey.Value, 0, MAC_KEY_LENGTH);
-				Utils.BlockCopy(_sessionKey.Value, MAC_KEY_LENGTH, _encKey.Value, 0, ENC_KEY_LENGTH);
-				Utils.BlockCopy(_contextBuffer.Value, 0, output, outputOffset, CONTEXT_BUFFER_LENGTH);
+				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(contextBuffer, 0, CONTEXT_TWEAK_LENGTH), derivedOutput: sessionKey.AsArraySegment(), counter: counter);
 
-				Utils.BlockCopy(_contextBuffer.Value, CONTEXT_TWEAK_LENGTH, _counterBuffer.Value, 0, NONCE_LENGTH);
-				using (var ctrTransform = new Cipher.AesCtrCryptoTransform(key: _encKey.Value, counterBufferSegment: _counterBuffer.Value.AsArraySegment(), aesFactory: _aesFactory))
+				//Utils.BlockCopy(sessionKey, 0, macKey, 0, MAC_KEY_LENGTH);
+				for (int i = 0; i < macKey.Length; ++i) macKey[i] = sessionKey[i];
+
+				//Utils.BlockCopy(sessionKey, MAC_KEY_LENGTH, encKey, 0, ENC_KEY_LENGTH);
+				for (int i = 0; i < encKey.Length; ++i) encKey[i] = sessionKey[MAC_KEY_LENGTH + i];
+
+				//Utils.BlockCopy(contextBuffer, 0, output, outputOffset, CONTEXT_BUFFER_LENGTH);
+				for (int i = 0; i < contextBuffer.Length; ++i) output[outputOffset + i] = contextBuffer[i];
+
+				//Utils.BlockCopy(contextBuffer, CONTEXT_TWEAK_LENGTH, counterBuffer, 0, NONCE_LENGTH);
+				for (int i = 0; i < NONCE_LENGTH; ++i) counterBuffer[i] = contextBuffer[CONTEXT_TWEAK_LENGTH + i];
+
+				using (var ctrTransform = new Cipher.AesCtrCryptoTransform(key: encKey, counterBufferSegment: counterBuffer.AsArraySegment(), aesFactory: _aesFactory))
 				{
 					ctrTransform.TransformBlock(inputBuffer: plaintext.Array, inputOffset: plaintext.Offset, inputCount: plaintext.Count, outputBuffer: output, outputOffset: outputOffset + CONTEXT_BUFFER_LENGTH);
 				}// using aesEncryptor
 
 				using (var hmac = _hmacFactory())
 				{
-					hmac.Key = _macKey.Value;
+					hmac.Key = macKey;
 					hmac.TransformBlock(output, outputOffset + CONTEXT_TWEAK_LENGTH, NONCE_LENGTH + plaintext.Count, null, 0);
 					hmac.TransformFinalBlock(output, 0, 0);
 					var fullmac = hmac.HashInner;
-					Utils.BlockCopy(fullmac, 0, output, outputOffset + ciphertextLength - MAC_LENGTH, MAC_LENGTH);
+
+					//Utils.BlockCopy(fullmac, 0, output, outputOffset + ciphertextLength - MAC_LENGTH, MAC_LENGTH);
+					for (int i = 0; i < MAC_LENGTH; ++i) output[outputOffset + ciphertextLength - MAC_LENGTH + i] = fullmac[i];
 				}// using hmac
 			}
 			finally { EtM_CTR.ClearKeyMaterial(); }
@@ -79,24 +94,39 @@ namespace SecurityDriven.Inferno
 			if (cipherLength < 0) { outputSegment = null; return; }
 			try
 			{
-				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(ciphertext.Array, ciphertext.Offset, CONTEXT_TWEAK_LENGTH), derivedOutput: new ArraySegment<byte>(_sessionKey.Value), counter: counter);
-				Utils.BlockCopy(_sessionKey.Value, 0, _macKey.Value, 0, MAC_KEY_LENGTH);
+				var counterBuffer = _counterBuffer.Value;
+				var encKey = _encKey.Value;
+				var macKey = _macKey.Value;
+				var sessionKey = _sessionKey.Value;
+
+				var ciphertextArray = ciphertext.Array;
+				var ciphertextOffset = ciphertext.Offset;
+
+				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(ciphertextArray, ciphertextOffset, CONTEXT_TWEAK_LENGTH), derivedOutput: sessionKey.AsArraySegment(), counter: counter);
+
+				//Utils.BlockCopy(sessionKey, 0, macKey, 0, MAC_KEY_LENGTH);
+				for (int i = 0; i < macKey.Length; ++i) macKey[i] = sessionKey[i];
 
 				using (var hmac = _hmacFactory())
 				{
-					hmac.Key = _macKey.Value;
-					hmac.TransformBlock(ciphertext.Array, ciphertext.Offset + CONTEXT_TWEAK_LENGTH, NONCE_LENGTH + cipherLength, null, 0);
-					hmac.TransformFinalBlock(ciphertext.Array, 0, 0);
+					hmac.Key = macKey;
+					hmac.TransformBlock(ciphertextArray, ciphertextOffset + CONTEXT_TWEAK_LENGTH, NONCE_LENGTH + cipherLength, null, 0);
+					hmac.TransformFinalBlock(ciphertextArray, 0, 0);
 					var fullmacActual = hmac.HashInner;
-					if (!Utils.ConstantTimeEqual(fullmacActual, 0, ciphertext.Array, ciphertext.Offset + ciphertext.Count - MAC_LENGTH, MAC_LENGTH)) { outputSegment = null; return; };
+					if (!Utils.ConstantTimeEqual(fullmacActual, 0, ciphertextArray, ciphertextOffset + ciphertext.Count - MAC_LENGTH, MAC_LENGTH)) { outputSegment = null; return; };
 				}// using hmac
 
 				if (outputSegment == null) outputSegment = (new byte[cipherLength]).AsNullableArraySegment();
-				Utils.BlockCopy(ciphertext.Array, ciphertext.Offset + CONTEXT_TWEAK_LENGTH, _counterBuffer.Value, 0, NONCE_LENGTH);
-				Utils.BlockCopy(_sessionKey.Value, MAC_KEY_LENGTH, _encKey.Value, 0, ENC_KEY_LENGTH);
-				using (var ctrTransform = new Cipher.AesCtrCryptoTransform(key: _encKey.Value, counterBufferSegment: _counterBuffer.Value.AsArraySegment(), aesFactory: _aesFactory))
+
+				//Utils.BlockCopy(ciphertext.Array, ciphertext.Offset + CONTEXT_TWEAK_LENGTH, counterBuffer, 0, NONCE_LENGTH);
+				for (int i = 0; i < NONCE_LENGTH; ++i) counterBuffer[i] = ciphertextArray[ciphertextOffset + CONTEXT_TWEAK_LENGTH + i];
+
+				//Utils.BlockCopy(sessionKey, MAC_KEY_LENGTH, encKey, 0, ENC_KEY_LENGTH);
+				for (int i = 0; i < encKey.Length; ++i) encKey[i] = sessionKey[MAC_KEY_LENGTH + i];
+
+				using (var ctrTransform = new Cipher.AesCtrCryptoTransform(key: encKey, counterBufferSegment: counterBuffer.AsArraySegment(), aesFactory: _aesFactory))
 				{
-					ctrTransform.TransformBlock(inputBuffer: ciphertext.Array, inputOffset: ciphertext.Offset + CONTEXT_BUFFER_LENGTH, inputCount: cipherLength, outputBuffer: outputSegment.GetValueOrDefault().Array, outputOffset: outputSegment.GetValueOrDefault().Offset);
+					ctrTransform.TransformBlock(inputBuffer: ciphertextArray, inputOffset: ciphertextOffset + CONTEXT_BUFFER_LENGTH, inputCount: cipherLength, outputBuffer: outputSegment.GetValueOrDefault().Array, outputOffset: outputSegment.GetValueOrDefault().Offset);
 				}// using aesDecryptor
 			}
 			finally { EtM_CTR.ClearKeyMaterial(); }
@@ -117,15 +147,25 @@ namespace SecurityDriven.Inferno
 			if (cipherLength < 0) return false;
 			try
 			{
-				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(ciphertext.Array, ciphertext.Offset, CONTEXT_TWEAK_LENGTH), derivedOutput: _sessionKey.Value.AsArraySegment(), counter: counter);
-				Utils.BlockCopy(_sessionKey.Value, 0, _macKey.Value, 0, MAC_KEY_LENGTH);
+				var encKey = _encKey.Value;
+				var macKey = _macKey.Value;
+				var sessionKey = _sessionKey.Value;
+
+				var ciphertextArray = ciphertext.Array;
+				var ciphertextOffset = ciphertext.Offset;
+
+				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(ciphertextArray, ciphertextOffset, CONTEXT_TWEAK_LENGTH), derivedOutput: sessionKey.AsArraySegment(), counter: counter);
+
+				//Utils.BlockCopy(sessionKey, 0, macKey, 0, MAC_KEY_LENGTH);
+				for (int i = 0; i < macKey.Length; ++i) macKey[i] = sessionKey[i];
+
 				using (var hmac = _hmacFactory())
 				{
-					hmac.Key = _macKey.Value;
-					hmac.TransformBlock(ciphertext.Array, ciphertext.Offset + CONTEXT_TWEAK_LENGTH, NONCE_LENGTH + cipherLength, null, 0);
-					hmac.TransformFinalBlock(ciphertext.Array, 0, 0);
+					hmac.Key = macKey;
+					hmac.TransformBlock(ciphertextArray, ciphertextOffset + CONTEXT_TWEAK_LENGTH, NONCE_LENGTH + cipherLength, null, 0);
+					hmac.TransformFinalBlock(ciphertextArray, 0, 0);
 					var fullmacActual = hmac.HashInner;
-					if (!Utils.ConstantTimeEqual(fullmacActual, 0, ciphertext.Array, ciphertext.Offset + ciphertext.Count - MAC_LENGTH, MAC_LENGTH)) return false;
+					if (!Utils.ConstantTimeEqual(fullmacActual, 0, ciphertextArray, ciphertextOffset + ciphertext.Count - MAC_LENGTH, MAC_LENGTH)) return false;
 				}// using hmac
 				return true;
 			}
