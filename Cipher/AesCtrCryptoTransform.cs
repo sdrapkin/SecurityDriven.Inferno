@@ -91,6 +91,7 @@ namespace SecurityDriven.Inferno.Cipher
 
 			int partialBlockSize = remainingInputCount % AesConstants.AES_BLOCK_SIZE;
 			int fullBlockSize = remainingInputCount & (-AesConstants.AES_BLOCK_SIZE); // remainingInputCount - partialBlockSize;
+			var transform = this.cryptoTransform;
 
 			// process full blocks, if any
 			if (fullBlockSize > 0)
@@ -118,7 +119,7 @@ namespace SecurityDriven.Inferno.Cipher
 					for (j = AesConstants.AES_BLOCK_SIZE - 1; j >= AesConstants.AES_BLOCK_SIZE - AesConstants.COUNTER_SIZE; --j) if (++counterBuffer_KeyStreamBuffer[j] != 0) break;
 				}
 
-				fullBlockSize = this.cryptoTransform.TransformBlock(outputBuffer, outputOffset, fullBlockSize, outputBuffer, outputOffset);
+				fullBlockSize = transform.TransformBlock(outputBuffer, outputOffset, fullBlockSize, outputBuffer, outputOffset);
 
 				//Utils.Xor(outputBuffer, outputOffset, inputBuffer, inputOffset, fullBlockSize);
 				/* vectorized xor
@@ -153,7 +154,7 @@ namespace SecurityDriven.Inferno.Cipher
 				inputOffset += fullBlockSize;
 				outputOffset += fullBlockSize;
 
-				this.cryptoTransform.TransformBlock(counterBuffer_KeyStreamBuffer, 0, AesConstants.AES_BLOCK_SIZE, counterBuffer_KeyStreamBuffer, AesConstants.AES_BLOCK_SIZE);
+				transform.TransformBlock(counterBuffer_KeyStreamBuffer, 0, AesConstants.AES_BLOCK_SIZE, counterBuffer_KeyStreamBuffer, AesConstants.AES_BLOCK_SIZE);
 				for (j = AesConstants.AES_BLOCK_SIZE - 1; j >= AesConstants.AES_BLOCK_SIZE - AesConstants.COUNTER_SIZE; --j) if (++counterBuffer_KeyStreamBuffer[j] != 0) break;
 				for (i = 0; i < partialBlockSize; ++i) outputBuffer[outputOffset + i] = (byte)(counterBuffer_KeyStreamBuffer[AesConstants.AES_BLOCK_SIZE + i] ^ inputBuffer[inputOffset + i]);
 				this.keyStreamBytesRemaining = AesConstants.AES_BLOCK_SIZE - partialBlockSize;

@@ -19,8 +19,8 @@ namespace SecurityDriven.Inferno.Mac
 		bool isHashDirty;
 
 		const int MAX_HASH_BLOCK_SIZE = 1344 >> 3; // 1344 is max SHA-family block size in bits (https://en.wikipedia.org/wiki/SHA-3)
-		static readonly byte[] _ipad = Enumerable.Repeat<byte>(0x36, MAX_HASH_BLOCK_SIZE).ToArray();
-		static readonly byte[] _opad = Enumerable.Repeat<byte>(0x5c, MAX_HASH_BLOCK_SIZE).ToArray();
+		static readonly long[] _ipadLongs = new Utils.Union { Bytes = Enumerable.Repeat<byte>(0x36, MAX_HASH_BLOCK_SIZE).ToArray() }.Longs;
+		static readonly long[] _opadLongs = new Utils.Union { Bytes = Enumerable.Repeat<byte>(0x5c, MAX_HASH_BLOCK_SIZE).ToArray() }.Longs;
 
 		static readonly Func<HashAlgorithm, byte[]> _HashValue_Getter =
 			Utils.CreateGetter<HashAlgorithm, byte[]>(typeof(HashAlgorithm).GetField("HashValue", BindingFlags.Instance | BindingFlags.NonPublic));
@@ -57,6 +57,9 @@ namespace SecurityDriven.Inferno.Mac
 			{
 				if (isHashing) throw new CryptographicException("Hash key cannot be changed after the first write to the stream.");
 				if (isHashDirty) { hashAlgorithm.Initialize(); isHashDirty = false; }
+
+				var blockSizeValue = this.blockSizeValue;
+
 				if (value.Length > blockSizeValue)
 				{
 					hashAlgorithm.TransformBlock(value, 0, value.Length, null, 0);
@@ -65,16 +68,29 @@ namespace SecurityDriven.Inferno.Mac
 
 					hashAlgorithm.Initialize();
 				}
-				keyLength = value.Length;
+				var keyLength = value.Length;
+				this.keyLength = keyLength;
 
-				Utils.BlockCopy(value, 0, base.KeyValue, 0, keyLength);
-				//for (int i = 0; i < keyLength; ++i) base.KeyValue[i] = value[i];
+				var keyValue = base.KeyValue;
 
-				if (isRekeying) Array.Clear(base.KeyValue, keyLength, blockSizeValue - keyLength);
+				Utils.BlockCopy(value, 0, keyValue, 0, keyLength);
+				//for (int i = 0; i < keyLength; ++i) keyValue[i] = value[i];
+
+				if (isRekeying) Array.Clear(keyValue, keyLength, blockSizeValue - keyLength);
 				else isRekeying = true;
 
-				Utils.Xor(dest: base.KeyValue, destOffset: blockSizeValue, left: _ipad, leftOffset: 0, right: base.KeyValue, rightOffset: 0, byteCount: blockSizeValue);
-				Utils.Xor(dest: base.KeyValue, destOffset: blockSizeValue << 1, left: _opad, leftOffset: 0, right: base.KeyValue, rightOffset: 0, byteCount: blockSizeValue);
+				//Utils.Xor(dest: keyValue, destOffset: blockSizeValue, left: ipad, leftOffset: 0, right: keyValue, rightOffset: 0, byteCount: blockSizeValue);
+				//Utils.Xor(dest: keyValue, destOffset: blockSizeValue << 1, left: opad, leftOffset: 0, right: keyValue, rightOffset: 0, byteCount: blockSizeValue);
+
+				long[] keyValueLongs = new Utils.Union { Bytes = keyValue }.Longs, ipadLongs = _ipadLongs, opadLongs = _opadLongs;
+				blockSizeValue = blockSizeValue >> 3;
+
+				for (int i = 0; i < blockSizeValue; ++i)
+				{
+					ref var keyValueLong = ref keyValueLongs[i];
+					keyValueLongs[blockSizeValue + i] = keyValueLong ^ ipadLongs[i];
+					keyValueLongs[(blockSizeValue << 1) + i] = keyValueLong ^ opadLongs[i];
+				}
 			}
 		}// Key
 
