@@ -20,32 +20,35 @@ namespace SecurityDriven.Inferno
 		internal const int NONCE_LENGTH = Cipher.AesConstants.AES_BLOCK_SIZE / 2;
 		const int CONTEXT_BUFFER_LENGTH = CONTEXT_TWEAK_LENGTH + NONCE_LENGTH;
 
+		/*
 		static readonly ThreadLocal<byte[]> _counterBuffer = new ThreadLocal<byte[]>(() => new byte[Cipher.AesConstants.AES_BLOCK_SIZE]);
 		static readonly ThreadLocal<byte[]> _contextBuffer = new ThreadLocal<byte[]>(() => new byte[CONTEXT_BUFFER_LENGTH]);
 		static readonly ThreadLocal<byte[]> _encKey = new ThreadLocal<byte[]>(() => new byte[ENC_KEY_LENGTH]);
 		static readonly ThreadLocal<byte[]> _macKey = new ThreadLocal<byte[]>(() => new byte[MAC_KEY_LENGTH]);
 		static readonly ThreadLocal<byte[]> _sessionKey = new ThreadLocal<byte[]>(() => new byte[HMAC_LENGTH]);
+		*/
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static void ClearKeyMaterial()
+		static void ClearKeyMaterial(byte[] encKey, byte[] macKey, byte[] sessionKey)
 		{
-			Array.Clear(_encKey.Value, 0, ENC_KEY_LENGTH);
-			Array.Clear(_macKey.Value, 0, MAC_KEY_LENGTH);
-			Array.Clear(_sessionKey.Value, 0, HMAC_LENGTH);
-		}
+			Array.Clear(encKey, 0, encKey.Length);
+			Array.Clear(macKey, 0, macKey.Length);
+			Array.Clear(sessionKey, 0, sessionKey.Length);
+		}// ClearKeyMaterial()
 
 		public static void Encrypt(byte[] masterKey, ArraySegment<byte> plaintext, byte[] output, int outputOffset, ArraySegment<byte>? salt = null, uint counter = 1)
 		{
 			int ciphertextLength = CONTEXT_BUFFER_LENGTH + plaintext.Count + MAC_LENGTH;
 			if (output.Length - outputOffset < ciphertextLength) throw new ArgumentOutOfRangeException(nameof(output), $"'{nameof(output)}' array segment is not big enough for the ciphertext");
+
+			var counterBuffer = new byte[Cipher.AesConstants.AES_BLOCK_SIZE];
+			var contextBuffer = new byte[CONTEXT_BUFFER_LENGTH];
+			var encKey = new byte[ENC_KEY_LENGTH];
+			var macKey = new byte[MAC_KEY_LENGTH];
+			var sessionKey = new byte[HMAC_LENGTH];
+
 			try
 			{
-				var counterBuffer = _counterBuffer.Value;
-				var contextBuffer = _contextBuffer.Value;
-				var encKey = _encKey.Value;
-				var macKey = _macKey.Value;
-				var sessionKey = _sessionKey.Value;
-
 				_cryptoRandom.NextBytes(contextBuffer, 0, CONTEXT_BUFFER_LENGTH);
 
 				Kdf.SP800_108_Ctr.DeriveKey(hmacFactory: _hmacFactory, key: masterKey, label: salt, context: new ArraySegment<byte>(contextBuffer, 0, CONTEXT_TWEAK_LENGTH), derivedOutput: sessionKey.AsArraySegment(), counter: counter);
@@ -78,7 +81,7 @@ namespace SecurityDriven.Inferno
 					for (int i = 0; i < MAC_LENGTH; ++i) output[outputOffset + ciphertextLength - MAC_LENGTH + i] = fullmac[i];
 				}// using hmac
 			}
-			finally { EtM_CTR.ClearKeyMaterial(); }
+			finally { EtM_CTR.ClearKeyMaterial(encKey, macKey, sessionKey); }
 		}// Encrypt()
 
 		public static byte[] Encrypt(byte[] masterKey, ArraySegment<byte> plaintext, ArraySegment<byte>? salt = null, uint counter = 1)
@@ -92,13 +95,14 @@ namespace SecurityDriven.Inferno
 		{
 			int cipherLength = ciphertext.Count - CONTEXT_BUFFER_LENGTH - MAC_LENGTH;
 			if (cipherLength < 0) { outputSegment = null; return; }
+
+			var counterBuffer = new byte[Cipher.AesConstants.AES_BLOCK_SIZE];
+			var encKey = new byte[ENC_KEY_LENGTH];
+			var macKey = new byte[MAC_KEY_LENGTH];
+			var sessionKey = new byte[HMAC_LENGTH];
+
 			try
 			{
-				var counterBuffer = _counterBuffer.Value;
-				var encKey = _encKey.Value;
-				var macKey = _macKey.Value;
-				var sessionKey = _sessionKey.Value;
-
 				var ciphertextArray = ciphertext.Array;
 				var ciphertextOffset = ciphertext.Offset;
 
@@ -129,7 +133,7 @@ namespace SecurityDriven.Inferno
 					ctrTransform.TransformBlock(inputBuffer: ciphertextArray, inputOffset: ciphertextOffset + CONTEXT_BUFFER_LENGTH, inputCount: cipherLength, outputBuffer: outputSegment.GetValueOrDefault().Array, outputOffset: outputSegment.GetValueOrDefault().Offset);
 				}// using aesDecryptor
 			}
-			finally { EtM_CTR.ClearKeyMaterial(); }
+			finally { EtM_CTR.ClearKeyMaterial(encKey, macKey, sessionKey); }
 		}// Decrypt()
 
 		public static byte[] Decrypt(byte[] masterKey, ArraySegment<byte> ciphertext, ArraySegment<byte>? salt = null, uint counter = 1)
@@ -145,12 +149,13 @@ namespace SecurityDriven.Inferno
 		{
 			int cipherLength = ciphertext.Count - CONTEXT_BUFFER_LENGTH - MAC_LENGTH;
 			if (cipherLength < 0) return false;
+
+			var encKey = new byte[ENC_KEY_LENGTH];
+			var macKey = new byte[MAC_KEY_LENGTH];
+			var sessionKey = new byte[HMAC_LENGTH];
+
 			try
 			{
-				var encKey = _encKey.Value;
-				var macKey = _macKey.Value;
-				var sessionKey = _sessionKey.Value;
-
 				var ciphertextArray = ciphertext.Array;
 				var ciphertextOffset = ciphertext.Offset;
 
@@ -169,7 +174,7 @@ namespace SecurityDriven.Inferno
 				}// using hmac
 				return true;
 			}
-			finally { EtM_CTR.ClearKeyMaterial(); }
+			finally { EtM_CTR.ClearKeyMaterial(encKey, macKey, sessionKey); }
 		}// Authenticate()
 	}//class EtM_CTR
 }//ns

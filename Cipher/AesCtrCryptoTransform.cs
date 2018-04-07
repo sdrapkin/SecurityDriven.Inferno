@@ -182,7 +182,7 @@ namespace SecurityDriven.Inferno.Cipher
 				}
 				finally
 				{
-					Array.Clear(this.counterBuffer_KeyStreamBuffer, 0, AesConstants.AES_BLOCK_SIZE * 2);
+					Array.Clear(this.counterBuffer_KeyStreamBuffer, AesConstants.AES_BLOCK_SIZE, AesConstants.AES_BLOCK_SIZE);
 					this.aes = null;
 				}
 			}// if aes is not null
