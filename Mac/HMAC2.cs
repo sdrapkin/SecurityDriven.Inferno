@@ -85,11 +85,11 @@ namespace SecurityDriven.Inferno.Mac
 				long[] keyValueLongs = new Utils.Union { Bytes = keyValue }.Longs, ipadLongs = _ipadLongs, opadLongs = _opadLongs;
 				blockSizeValue = blockSizeValue >> 3;
 
-				for (int i = 0; i < blockSizeValue; ++i)
+				for (int i = 0, blockSizeValue_x2 = blockSizeValue << 1; i < blockSizeValue; ++i)
 				{
 					ref var keyValueLong = ref keyValueLongs[i];
 					keyValueLongs[blockSizeValue + i] = keyValueLong ^ ipadLongs[i];
-					keyValueLongs[(blockSizeValue << 1) + i] = keyValueLong ^ opadLongs[i];
+					keyValueLongs[blockSizeValue_x2 + i] = keyValueLong ^ opadLongs[i];
 				}
 			}
 		}// Key
