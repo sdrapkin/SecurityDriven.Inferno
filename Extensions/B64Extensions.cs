@@ -12,11 +12,14 @@ namespace SecurityDriven.Inferno.Extensions
 	{
 		public static string ToB64(this byte[] input)
 		{
-			return input.AsArraySegment().ToB64();
+			var inputAsArraySegment = input.AsArraySegment();
+			return inputAsArraySegment._ToB64();
 		}
 
 		// UrlTokenEncode() equivalent
-		public static string ToB64(this ArraySegment<byte> inputSegment)
+		public static string ToB64(this ArraySegment<byte> inputSegment) => _ToB64(ref inputSegment);
+
+		static string _ToB64(this ref ArraySegment<byte> inputSegment)
 		{
 			byte[] inputArray = inputSegment.Array;
 			int inputLength = inputSegment.Count;
@@ -78,7 +81,7 @@ namespace SecurityDriven.Inferno.Extensions
 				}
 			}
 			return new string(base64Chars);
-		}// ToB64()
+		}// _ToB64()
 
 		// UrlTokenDecode() equivalent
 		public static byte[] FromB64(this string input)
@@ -139,14 +142,17 @@ namespace SecurityDriven.Inferno.Extensions
 		/* base64 web-safe encoding (padless) from RFC 4648 - https://tools.ietf.org/html/rfc4648#section-5 */
 		public static string ToB64Url(this byte[] input)
 		{
-			return input.AsArraySegment().ToB64Url();
+			var inputAsArraySegment = input.AsArraySegment();
+			return inputAsArraySegment._ToB64Url();
 		}// ToB64Url()
 
-		public static string ToB64Url(this ArraySegment<byte> inputSegment)
+		public static string ToB64Url(this ArraySegment<byte> inputSegment) => inputSegment._ToB64Url();
+
+		static string _ToB64Url(this ref ArraySegment<byte> inputSegment)
 		{
-			string b64str = inputSegment.ToB64();
+			string b64str = inputSegment._ToB64();
 			return b64str.Substring(0, b64str.Length - 1);
-		}// ToB64Url()
+		}// _ToB64Url()
 
 		public static byte[] FromB64Url(this string str)
 		{
