@@ -334,7 +334,7 @@ namespace SecurityDriven.Inferno
 			Debug.Assert(pbBuffer != null);
 			Debug.Assert(cbBuffer >= 0 && obBuffer >= 0 && (obBuffer + cbBuffer) <= pbBuffer.Length);
 
-			GCHandle pinnedBufferHandle = default(GCHandle);
+			GCHandle pinnedBufferHandle = default;
 			NTSTATUS status;
 			try
 			{
