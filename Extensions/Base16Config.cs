@@ -44,8 +44,7 @@ namespace SecurityDriven.Inferno.Extensions
 
 		public override bool Equals(object obj)
 		{
-			var rhs = obj as Base16Config;
-			if (rhs == null)
+			if (!(obj is Base16Config rhs))
 				return false;
 
 			if (this.GetHashCode() != rhs.GetHashCode())
