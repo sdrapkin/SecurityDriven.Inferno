@@ -4,9 +4,9 @@ namespace SecurityDriven.Inferno.Extensions
 {
 	public static class Base16Extensions
 	{
-        /// <summary>
-        /// Converts a byte array into equivalent Base16-encoded string.
-        /// </summary>
+		/// <summary>
+		/// Converts a byte array into equivalent Base16-encoded string.
+		/// </summary>
 		public static string ToBase16(this byte[] binary, Base16Config config = null)
 		{
 			if (config == null)
@@ -23,9 +23,9 @@ namespace SecurityDriven.Inferno.Extensions
 			return new string(chars);
 		}//ToBase16()
 
-        /// <summary>
-        /// Converts a byte array into equivalent Base16-encoded string.
-        /// </summary>
+		/// <summary>
+		/// Converts a byte array into equivalent Base16-encoded string.
+		/// </summary>
 		public static string ToBase16(this ArraySegment<byte> binarySegment, Base16Config config = null)
 		{
 			if (config == null)

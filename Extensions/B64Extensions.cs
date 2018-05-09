@@ -13,13 +13,14 @@ namespace SecurityDriven.Inferno.Extensions
 		public static string ToB64(this byte[] input)
 		{
 			var inputAsArraySegment = input.AsArraySegment();
-			return _ToB64(in inputAsArraySegment);
+			return _ToB64(ref inputAsArraySegment);
 		}// ToB64()
 
 		// UrlTokenEncode() equivalent
-		public static string ToB64(this in ArraySegment<byte> inputSegment) => _ToB64(in inputSegment);
 
-		static string _ToB64(in ArraySegment<byte> inputSegment)
+		public static string ToB64(this ArraySegment<byte> inputSegment) => _ToB64(ref inputSegment);
+
+		static string _ToB64(ref ArraySegment<byte> inputSegment)
 		{
 			byte[] inputArray = inputSegment.Array;
 			int inputLength = inputSegment.Count;
@@ -143,14 +144,14 @@ namespace SecurityDriven.Inferno.Extensions
 		public static string ToB64Url(this byte[] input)
 		{
 			var inputAsArraySegment = input.AsArraySegment();
-			return _ToB64Url(in inputAsArraySegment);
+			return _ToB64Url(ref inputAsArraySegment);
 		}// ToB64Url()
 
-		public static string ToB64Url(this in ArraySegment<byte> inputSegment) => _ToB64Url(in inputSegment);
+		public static string ToB64Url(this ArraySegment<byte> inputSegment) => _ToB64Url(ref inputSegment);
 
-		static string _ToB64Url(in ArraySegment<byte> inputSegment)
+		static string _ToB64Url(ref ArraySegment<byte> inputSegment)
 		{
-			string b64str = _ToB64(in inputSegment);
+			string b64str = _ToB64(ref inputSegment);
 			return b64str.Substring(0, b64str.Length - 1);
 		}// _ToB64Url()
 
