@@ -1,95 +1,34 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{AEC580CB-0774-407A-8274-C356DBF224A4}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SecurityDriven.Inferno</RootNamespace>
-    <AssemblyName>SecurityDriven.Inferno</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <DocumentationFile>bin\Release\SecurityDriven.Inferno.XML</DocumentationFile>
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>
-    </AssemblyOriginatorKeyFile>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Cipher\AesCtrCryptoTransform.cs" />
-    <Compile Include="Cipher\AesFactories.cs" />
-    <Compile Include="EtM_CTR.cs" />
-    <Compile Include="EtM_Transforms.cs" />
-    <Compile Include="Extensions\B64Extensions.cs" />
-    <Compile Include="Extensions\Base16Config.cs" />
-    <Compile Include="Extensions\Base16Extensions.cs" />
-    <Compile Include="Extensions\Base32Config.cs" />
-    <Compile Include="Extensions\Base32Extensions.cs" />
-    <Compile Include="CryptoRandom.cs" />
-    <Compile Include="Extensions\ByteArrayExtensions.cs" />
-    <Compile Include="Extensions\CngKeyExtensions.cs" />
-    <Compile Include="EtM_CBC.cs" />
-    <Compile Include="Kdf\HKDF.cs" />
-    <Compile Include="Mac\HMAC2.cs" />
-    <Compile Include="Mac\HMACFactories.cs" />
-    <Compile Include="Kdf\PBKDF2.cs" />
-    <Compile Include="Extensions\SerializationExtensions.cs" />
-    <Compile Include="Kdf\SP800_108_Ctr.cs" />
-    <Compile Include="Otp\TOTP.cs" />
-    <Compile Include="SuiteB.cs" />
-    <Compile Include="Utils.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Hash\HashFactories.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="_Doc\SecurityDriven.Inferno.Doc.html" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="LICENSE.md" />
-    <None Include="README.md" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>netcoreapp2.1;net462</TargetFrameworks>
+		<RootNamespace>SecurityDriven.Inferno</RootNamespace>
+		<Version>1.5.1.0</Version>
+		<Company>http://SecurityDriven.NET/inferno</Company>
+		<PackageId>Inferno</PackageId>
+		<Authors>Stan Drapkin</Authors>
+		<Copyright>Copyright (c) 2018 Stan Drapkin</Copyright>
+		<Description>Modern, free, open-source, professionally audited .NET crypto library.</Description>
+		<PackageProjectUrl>http://securitydriven.net/inferno/</PackageProjectUrl>
+		<PackageTags>crypto cryptography encryption security</PackageTags>
+		<AssemblyName>SecurityDriven.Inferno</AssemblyName>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+	  <LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Cipher\AesPool.cs" />
+	  <Compile Remove="Mac\HMAC2_old.cs" />
+	  <Compile Remove="Mac\HMAC3.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="System.Security.Cryptography.Cng" Version="4.5.0-rc1" Condition="'$(TargetFramework)' == 'netcoreapp2.1'" />
+	</ItemGroup>
 </Project>

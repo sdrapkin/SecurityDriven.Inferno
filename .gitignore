@@ -241,3 +241,6 @@ _Doc/*
 /COMMITS.md
 *.snk
 /Cipher/AesPool.cs
+*.old
+/SecurityDriven.InfernoCore.sln
+*.bak

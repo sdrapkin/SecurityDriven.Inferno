@@ -2,6 +2,8 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#if _NET462
+
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
@@ -19,9 +21,6 @@ using System.Runtime.InteropServices;
 // COM, set the ComVisible attribute to true on that type.
 [assembly: ComVisible(false)]
 
-// The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("9e6d41dc-4e51-45ba-9cb7-a927c6395b68")]
-
 // Version information for an assembly consists of the following four values:
 //
 //      Major Version
@@ -34,4 +33,9 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.5.0.0")]
 [assembly: AssemblyFileVersion("1.5.0.0")]
+#endif
+
+// The following GUID is for the ID of the typelib if this project is exposed to COM
+[assembly: Guid("9e6d41dc-4e51-45ba-9cb7-a927c6395b68")]
 [assembly: InternalsVisibleTo("SecurityDriven.Inferno.Tests")]
+[assembly: InternalsVisibleTo("SecurityDriven.Inferno.TestsCore")]

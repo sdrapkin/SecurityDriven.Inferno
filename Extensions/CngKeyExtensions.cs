@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Security.Cryptography;
+using System.Linq;
 
 namespace SecurityDriven.Inferno.Extensions
 {
@@ -45,9 +46,53 @@ namespace SecurityDriven.Inferno.Extensions
 		/// </summary>
 		public static byte[] GetSharedDhmSecret(this CngKey privateDhmKey, CngKey publicDhmKey, byte[] contextAppend = null, byte[] contextPrepend = null)
 		{
+#if NET462
 			using (var ecdh = new ECDiffieHellmanCng(privateDhmKey) { HashAlgorithm = CngAlgorithm.Sha384, SecretAppend = contextAppend, SecretPrepend = contextPrepend })
 				return ecdh.DeriveKeyMaterial(publicDhmKey);
-		}
+#elif NETCOREAPP2_1
+
+			const int P384_POINT_BYTELENGTH = 48;
+			var privateDhmKeyBytes = new ArraySegment<byte>(privateDhmKey.GetPrivateBlob(),
+				8 /* [4-byte magic] [4-byte length] */,
+				P384_POINT_BYTELENGTH * 3 /* [X] [Y] [D] */
+				);
+			var ecParameters_fromPrivateDhmKey = new ECParameters
+			{
+				Curve = ECCurve.NamedCurves.nistP384,
+				Q = new ECPoint
+				{
+					X = privateDhmKeyBytes.Skip(00).Take(P384_POINT_BYTELENGTH).ToArray(),
+					Y = privateDhmKeyBytes.Skip(P384_POINT_BYTELENGTH).Take(P384_POINT_BYTELENGTH).ToArray()
+				},
+				D = privateDhmKeyBytes.Skip(P384_POINT_BYTELENGTH * 2).Take(P384_POINT_BYTELENGTH).ToArray()
+			};
+
+			var publicDhmKeyBytes = new ArraySegment<byte>(publicDhmKey.GetPublicBlob(),
+				8 /* [4-byte magic] [4-byte length] */,
+				P384_POINT_BYTELENGTH * 2 /* [X] [Y] only */
+				);
+			var ecParameters_fromPublicDhmKey = new ECParameters
+			{
+				Curve = ECCurve.NamedCurves.nistP384,
+				Q = new ECPoint
+				{
+					X = publicDhmKeyBytes.Skip(00).Take(P384_POINT_BYTELENGTH).ToArray(),
+					Y = privateDhmKeyBytes.Skip(P384_POINT_BYTELENGTH).Take(P384_POINT_BYTELENGTH).ToArray()
+				},
+			};
+
+			using (var ecdh_source = ECDiffieHellman.Create(ecParameters_fromPrivateDhmKey))
+			using (var ecdh_target = ECDiffieHellman.Create(ecParameters_fromPublicDhmKey))
+			{
+				return ecdh_source.DeriveKeyFromHash(
+					otherPartyPublicKey: ecdh_target.PublicKey,
+					hashAlgorithm: HashAlgorithmName.SHA384,
+					secretPrepend: contextPrepend,
+					secretAppend: contextAppend
+					);
+			}
+#endif
+		}// GetSharedDhmSecret()
 
 		/// <summary>
 		/// Sender is anonymous and keyless.

@@ -30,9 +30,14 @@ namespace SecurityDriven.Inferno.Mac
 		{
 			hashAlgorithm = hashFactory();
 			base.HashSizeValue = hashAlgorithm.HashSize;
-
+#if NET462
 			if (hashAlgorithm is SHA384Cng || hashAlgorithm is SHA512Cng || hashAlgorithm is SHA384 || hashAlgorithm is SHA512)
+#elif NETCOREAPP2_1
+			if (hashAlgorithm is SHA384 || hashAlgorithm is SHA512)
+#endif
+			{
 				base.BlockSizeValue = blockSizeValue;
+			}
 			else blockSizeValue = 64;
 
 			// [block-sized raw key value] || [ipad xor'ed into block-sized raw key value] || [opad xor'ed into block-sized raw key value]
@@ -41,9 +46,9 @@ namespace SecurityDriven.Inferno.Mac
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public HMAC2(Func<HashAlgorithm> hashFactory, byte[] key) : this(hashFactory) { this.Key = key; }
-		#endregion
+#endregion
 
-		#region overrides
+#region overrides
 		public override byte[] Key
 		{
 			[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -176,7 +181,7 @@ namespace SecurityDriven.Inferno.Mac
 			isHashing = false;
 			isHashDirty = false;
 		}// Initialize()
-		#endregion overrides
+#endregion overrides
 
 		public byte[] HashInner
 		{
