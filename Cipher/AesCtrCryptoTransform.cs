@@ -135,6 +135,7 @@ namespace SecurityDriven.Inferno.Cipher
 				}
 				*/
 
+				i = 0;
 				{
 					if (((outputOffset | inputOffset) & 7) == 0) // all offsets must be multiples of 8 for long-sized xor
 					{
