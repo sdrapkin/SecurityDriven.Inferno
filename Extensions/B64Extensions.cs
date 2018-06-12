@@ -151,6 +151,7 @@ namespace SecurityDriven.Inferno.Extensions
 
 		static string _ToB64Url(ref ArraySegment<byte> inputSegment)
 		{
+			if (inputSegment.Count < 1) return string.Empty;
 			string b64str = _ToB64(ref inputSegment);
 			return b64str.Substring(0, b64str.Length - 1);
 		}// _ToB64Url()
