@@ -141,7 +141,7 @@ namespace SecurityDriven.Inferno.Cipher
 					{
 						long[] destUnionLongs = new Utils.Union { Bytes = outputBuffer }.Longs, leftUnionLongs = new Utils.Union { Bytes = inputBuffer }.Longs;
 						int longDestOffset = outputOffset >> 3, longLeftOffset = inputOffset >> 3, longCount = fullBlockSize >> 3;
-						for (i = 0; i < longCount; ++i) destUnionLongs[longDestOffset + i] ^= leftUnionLongs[longLeftOffset + i];
+						for (; i < longCount; ++i) destUnionLongs[longDestOffset + i] ^= leftUnionLongs[longLeftOffset + i];
 						i = longCount << 3;
 					}
 				}
