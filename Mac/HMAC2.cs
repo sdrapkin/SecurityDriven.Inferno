@@ -46,9 +46,9 @@ namespace SecurityDriven.Inferno.Mac
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public HMAC2(Func<HashAlgorithm> hashFactory, byte[] key) : this(hashFactory) { this.Key = key; }
-#endregion
+		#endregion
 
-#region overrides
+		#region overrides
 		public override byte[] Key
 		{
 			[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -92,11 +92,10 @@ namespace SecurityDriven.Inferno.Mac
 
 				for (int i = 0, blockSizeValue_x2 = blockSizeValue << 1; i < blockSizeValue; ++i)
 				{
-					ref var keyValueLong = ref keyValueLongs[i];
-					keyValueLongs[blockSizeValue + i] = keyValueLong ^ ipadLongs[i];
-					keyValueLongs[blockSizeValue_x2 + i] = keyValueLong ^ opadLongs[i];
+					keyValueLongs[blockSizeValue + i] = keyValueLongs[i] ^ ipadLongs[i];
+					keyValueLongs[blockSizeValue_x2 + i] = keyValueLongs[i] ^ opadLongs[i];
 				}
-			}
+			}//setter
 		}// Key
 
 		public new string HashName
@@ -181,7 +180,7 @@ namespace SecurityDriven.Inferno.Mac
 			isHashing = false;
 			isHashDirty = false;
 		}// Initialize()
-#endregion overrides
+		#endregion overrides
 
 		public byte[] HashInner
 		{

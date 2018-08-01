@@ -17,6 +17,7 @@ namespace SecurityDriven.Inferno.Cipher
 	{
 		byte[] counterBuffer_KeyStreamBuffer = new byte[AesConstants.AES_BLOCK_SIZE * 2];
 		int keyStreamBytesRemaining;
+		Utils.LongStruct counterStruct;
 
 		Aes aes;
 		readonly ICryptoTransform cryptoTransform;
@@ -53,14 +54,18 @@ namespace SecurityDriven.Inferno.Cipher
 			counterBuffer_KeyStreamBuffer[05] = counterBufferSegmentArray[counterBufferSegmentOffset + 05];
 			counterBuffer_KeyStreamBuffer[06] = counterBufferSegmentArray[counterBufferSegmentOffset + 06];
 			counterBuffer_KeyStreamBuffer[07] = counterBufferSegmentArray[counterBufferSegmentOffset + 07];
-			counterBuffer_KeyStreamBuffer[08] = counterBufferSegmentArray[counterBufferSegmentOffset + 08];
-			counterBuffer_KeyStreamBuffer[09] = counterBufferSegmentArray[counterBufferSegmentOffset + 09];
-			counterBuffer_KeyStreamBuffer[10] = counterBufferSegmentArray[counterBufferSegmentOffset + 10];
-			counterBuffer_KeyStreamBuffer[11] = counterBufferSegmentArray[counterBufferSegmentOffset + 11];
-			counterBuffer_KeyStreamBuffer[12] = counterBufferSegmentArray[counterBufferSegmentOffset + 12];
-			counterBuffer_KeyStreamBuffer[13] = counterBufferSegmentArray[counterBufferSegmentOffset + 13];
-			counterBuffer_KeyStreamBuffer[14] = counterBufferSegmentArray[counterBufferSegmentOffset + 14];
-			counterBuffer_KeyStreamBuffer[15] = counterBufferSegmentArray[counterBufferSegmentOffset + 15];
+
+			this.counterStruct = new Utils.LongStruct
+			{
+				B8 = counterBufferSegmentArray[counterBufferSegmentOffset + 08],
+				B7 = counterBufferSegmentArray[counterBufferSegmentOffset + 09],
+				B6 = counterBufferSegmentArray[counterBufferSegmentOffset + 10],
+				B5 = counterBufferSegmentArray[counterBufferSegmentOffset + 11],
+				B4 = counterBufferSegmentArray[counterBufferSegmentOffset + 12],
+				B3 = counterBufferSegmentArray[counterBufferSegmentOffset + 13],
+				B2 = counterBufferSegmentArray[counterBufferSegmentOffset + 14],
+				B1 = counterBufferSegmentArray[counterBufferSegmentOffset + 15]
+			};
 
 			this.cryptoTransform = aes.CreateEncryptor(rgbKey: key, rgbIV: null);
 			this.aes = aes;
@@ -71,7 +76,7 @@ namespace SecurityDriven.Inferno.Cipher
 		{
 			if (inputCount == 0) return 0;
 
-			int i, j, k, remainingInputCount = inputCount;
+			int i, j, remainingInputCount = inputCount;
 			byte[] counterBuffer_KeyStreamBuffer = this.counterBuffer_KeyStreamBuffer; // looks dumb, but local-access is faster than field-access
 
 			// process any available key stream first
@@ -91,14 +96,12 @@ namespace SecurityDriven.Inferno.Cipher
 
 			int partialBlockSize = remainingInputCount % AesConstants.AES_BLOCK_SIZE;
 			int fullBlockSize = remainingInputCount & (-AesConstants.AES_BLOCK_SIZE); // remainingInputCount - partialBlockSize;
-			var transform = this.cryptoTransform;
 
 			// process full blocks, if any
 			if (fullBlockSize > 0)
 			{
-				for (i = outputOffset, /* reusing k as iMax */ k = outputOffset + fullBlockSize; i < k; i += AesConstants.AES_BLOCK_SIZE)
+				for (i = outputOffset, /* reusing j as iMax */ j = outputOffset + fullBlockSize; i < j; i += AesConstants.AES_BLOCK_SIZE)
 				{
-					//Utils.BlockCopy(counterBuffer_KeyStreamBuffer, 0, outputBuffer, i, AesConstants.AES_BLOCK_SIZE);
 					outputBuffer[i + 00] = counterBuffer_KeyStreamBuffer[00];
 					outputBuffer[i + 01] = counterBuffer_KeyStreamBuffer[01];
 					outputBuffer[i + 02] = counterBuffer_KeyStreamBuffer[02];
@@ -107,19 +110,20 @@ namespace SecurityDriven.Inferno.Cipher
 					outputBuffer[i + 05] = counterBuffer_KeyStreamBuffer[05];
 					outputBuffer[i + 06] = counterBuffer_KeyStreamBuffer[06];
 					outputBuffer[i + 07] = counterBuffer_KeyStreamBuffer[07];
-					outputBuffer[i + 08] = counterBuffer_KeyStreamBuffer[08];
-					outputBuffer[i + 09] = counterBuffer_KeyStreamBuffer[09];
-					outputBuffer[i + 10] = counterBuffer_KeyStreamBuffer[10];
-					outputBuffer[i + 11] = counterBuffer_KeyStreamBuffer[11];
-					outputBuffer[i + 12] = counterBuffer_KeyStreamBuffer[12];
-					outputBuffer[i + 13] = counterBuffer_KeyStreamBuffer[13];
-					outputBuffer[i + 14] = counterBuffer_KeyStreamBuffer[14];
-					outputBuffer[i + 15] = counterBuffer_KeyStreamBuffer[15];
 
-					for (j = AesConstants.AES_BLOCK_SIZE - 1; j >= AesConstants.AES_BLOCK_SIZE - AesConstants.COUNTER_SIZE; --j) if (++counterBuffer_KeyStreamBuffer[j] != 0) break;
-				}
+					outputBuffer[i + 08] = this.counterStruct.B8;
+					outputBuffer[i + 09] = this.counterStruct.B7;
+					outputBuffer[i + 10] = this.counterStruct.B6;
+					outputBuffer[i + 11] = this.counterStruct.B5;
+					outputBuffer[i + 12] = this.counterStruct.B4;
+					outputBuffer[i + 13] = this.counterStruct.B3;
+					outputBuffer[i + 14] = this.counterStruct.B2;
+					outputBuffer[i + 15] = this.counterStruct.B1;
 
-				fullBlockSize = transform.TransformBlock(outputBuffer, outputOffset, fullBlockSize, outputBuffer, outputOffset);
+					unchecked { ++this.counterStruct.UlongValue; };
+				}//for
+
+				fullBlockSize = this.cryptoTransform.TransformBlock(outputBuffer, outputOffset, fullBlockSize, outputBuffer, outputOffset);
 
 				//Utils.Xor(outputBuffer, outputOffset, inputBuffer, inputOffset, fullBlockSize);
 				/* vectorized xor
@@ -139,10 +143,13 @@ namespace SecurityDriven.Inferno.Cipher
 				{
 					if (((outputOffset | inputOffset) & 7) == 0) // all offsets must be multiples of 8 for long-sized xor
 					{
-						long[] destUnionLongs = new Utils.Union { Bytes = outputBuffer }.Longs, leftUnionLongs = new Utils.Union { Bytes = inputBuffer }.Longs;
-						int longDestOffset = outputOffset >> 3, longLeftOffset = inputOffset >> 3, longCount = fullBlockSize >> 3;
-						for (; i < longCount; ++i) destUnionLongs[longDestOffset + i] ^= leftUnionLongs[longLeftOffset + i];
-						i = longCount << 3;
+						unchecked
+						{
+							long[] destUnionLongs = new Utils.Union { Bytes = outputBuffer }.Longs, leftUnionLongs = new Utils.Union { Bytes = inputBuffer }.Longs;
+							int longDestOffset = outputOffset >> 3, longLeftOffset = inputOffset >> 3, longCount = fullBlockSize >> 3;
+							for (; i < longCount; ++i) destUnionLongs[longDestOffset + i] ^= leftUnionLongs[longLeftOffset + i];
+							i = longCount << 3;
+						}
 					}
 				}
 
@@ -155,18 +162,27 @@ namespace SecurityDriven.Inferno.Cipher
 				inputOffset += fullBlockSize;
 				outputOffset += fullBlockSize;
 
-				transform.TransformBlock(counterBuffer_KeyStreamBuffer, 0, AesConstants.AES_BLOCK_SIZE, counterBuffer_KeyStreamBuffer, AesConstants.AES_BLOCK_SIZE);
-				for (j = AesConstants.AES_BLOCK_SIZE - 1; j >= AesConstants.AES_BLOCK_SIZE - AesConstants.COUNTER_SIZE; --j) if (++counterBuffer_KeyStreamBuffer[j] != 0) break;
+				counterBuffer_KeyStreamBuffer[08] = this.counterStruct.B8;
+				counterBuffer_KeyStreamBuffer[09] = this.counterStruct.B7;
+				counterBuffer_KeyStreamBuffer[10] = this.counterStruct.B6;
+				counterBuffer_KeyStreamBuffer[11] = this.counterStruct.B5;
+				counterBuffer_KeyStreamBuffer[12] = this.counterStruct.B4;
+				counterBuffer_KeyStreamBuffer[13] = this.counterStruct.B3;
+				counterBuffer_KeyStreamBuffer[14] = this.counterStruct.B2;
+				counterBuffer_KeyStreamBuffer[15] = this.counterStruct.B1;
+
+				this.cryptoTransform.TransformBlock(counterBuffer_KeyStreamBuffer, 0, AesConstants.AES_BLOCK_SIZE, counterBuffer_KeyStreamBuffer, AesConstants.AES_BLOCK_SIZE);
+
 				for (i = 0; i < partialBlockSize; ++i) outputBuffer[outputOffset + i] = (byte)(counterBuffer_KeyStreamBuffer[AesConstants.AES_BLOCK_SIZE + i] ^ inputBuffer[inputOffset + i]);
 				this.keyStreamBytesRemaining = AesConstants.AES_BLOCK_SIZE - partialBlockSize;
-			}
+			}//if partialBlockSize > 0
 
 			return inputCount;
 		}// TransformBlock()
 
 		public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
 		{
-			byte[] outputBuffer = new byte[inputCount];
+			byte[] outputBuffer = (inputCount == 0) ? _emptyByteArray : new byte[inputCount];
 			this.TransformBlock(inputBuffer, inputOffset, inputCount, outputBuffer, 0);
 			this.Dispose();
 			return outputBuffer;
@@ -189,5 +205,7 @@ namespace SecurityDriven.Inferno.Cipher
 			}// if aes is not null
 		}// Dispose()
 		#endregion
+
+		static readonly byte[] _emptyByteArray = Array.Empty<byte>();
 	}// class AesCtrCryptoTransform
 }//ns

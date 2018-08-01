@@ -22,6 +22,11 @@
 	  <LangVersion>latest</LangVersion>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netcoreapp2.1|AnyCPU'">
+	  <DebugType>pdbonly</DebugType>
+	  <DebugSymbols>true</DebugSymbols>
+	</PropertyGroup>
+
 	<ItemGroup>
 	  <Compile Remove="Cipher\AesPool.cs" />
 	  <Compile Remove="Mac\HMAC2_old.cs" />
