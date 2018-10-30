@@ -105,9 +105,31 @@ namespace SecurityDriven.Inferno.Extensions
 		}
 	}//class CngKeyExtensions
 
-	public class SharedEphemeralBundle
+	public class SharedEphemeralBundle : IDisposable
 	{
 		public byte[] SharedSecret;
 		public byte[] EphemeralDhmPublicKeyBlob;
+
+		#region IDisposable
+
+		void Internal_Dispose()
+		{
+			var sharedSecret = this.SharedSecret;
+			if (sharedSecret != null)
+			{
+				Array.Clear(sharedSecret, 0, sharedSecret.Length);
+				this.SharedSecret = null;
+			}
+		}// Internal_Dispose()
+
+		public void Dispose()
+		{
+			GC.SuppressFinalize(this);
+			this.Internal_Dispose();
+		}// Dispose()
+
+		~SharedEphemeralBundle() => Internal_Dispose();
+		#endregion
+
 	}//class SharedEphemeralDhmSecret
 }//ns
