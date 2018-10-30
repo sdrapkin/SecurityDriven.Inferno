@@ -44,7 +44,7 @@ namespace SecurityDriven.Inferno
 
 		#region ConstantTimeEqual() - byte arrays & ArraySegments
 		/// <exception cref="System.NullReferenceException">Thrown when either array is null.</exception>
-		[MethodImpl(MethodImplOptions.NoOptimization)]
+		[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
 		public static bool ConstantTimeEqual(byte[] x, int xOffset, byte[] y, int yOffset, int length)
 		{
 			// based on https://github.com/CodesInChaos/Chaos.NaCl/blob/55e84738252932fa123eaa7bb0dd9cb99de0ceb9/Chaos.NaCl/CryptoBytes.cs (public domain)
@@ -62,9 +62,12 @@ namespace SecurityDriven.Inferno
 				throw new ArgumentException("yOffset + length > y.Length");
 
 			int differentbits = 0;
-			for (int i = 0; i < length; ++i)
+			unchecked
 			{
-				differentbits |= x[xOffset + i] ^ y[yOffset + i];
+				for (int i = 0; i < length; ++i)
+				{
+					differentbits |= x[xOffset + i] ^ y[yOffset + i];
+				}
 			}
 			return differentbits == 0;
 		}// ConstantTimeEqual()
@@ -90,7 +93,7 @@ namespace SecurityDriven.Inferno
 		#endregion
 
 		#region ConstantTimeEqual() - strings
-		[MethodImpl(MethodImplOptions.NoOptimization)]
+		[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
 		static bool ConstantTimeEqual(string x, int xOffset, string y, int yOffset, int length)
 		{
 			// Null checks of "x" and "y" are skipped. Appropriate exceptions will be raised anyway.
@@ -106,9 +109,12 @@ namespace SecurityDriven.Inferno
 				throw new ArgumentException("yOffset + length > y.Length");
 
 			int differentbits = 0;
-			for (int i = 0; i < length; ++i)
+			unchecked
 			{
-				differentbits |= x[xOffset + i] ^ y[yOffset + i];
+				for (int i = 0; i < length; ++i)
+				{
+					differentbits |= x[xOffset + i] ^ y[yOffset + i];
+				}
 			}
 			return differentbits == 0;
 		}// ConstantTimeEqual()
