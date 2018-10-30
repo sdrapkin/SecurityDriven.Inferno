@@ -23,14 +23,14 @@ namespace SecurityDriven.Inferno
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static void ClearKeyMaterial(byte[] encKey, byte[] macKey, byte[] sessionKey)
 		{
-			Array.Clear(encKey, 0, encKey.Length);
-			Array.Clear(macKey, 0, macKey.Length);
+			for (int i = 0; i < encKey.Length; ++i) encKey[i] = 0;  //Array.Clear(encKey, 0, encKey.Length);
+			for (int j = 0; j < macKey.Length; ++j) macKey[j] = 0;  //Array.Clear(macKey, 0, macKey.Length);
 			Array.Clear(sessionKey, 0, sessionKey.Length);
 		}// ClearKeyMaterial()
 
 		public static void Encrypt(byte[] masterKey, ArraySegment<byte> plaintext, byte[] output, int outputOffset, ArraySegment<byte>? salt = null, uint counter = 1)
 		{
-			int ciphertextLength = CONTEXT_BUFFER_LENGTH + plaintext.Count + MAC_LENGTH;
+			int ciphertextLength = CONTEXT_BUFFER_LENGTH + MAC_LENGTH + plaintext.Count;
 			if (output.Length - outputOffset < ciphertextLength) throw new ArgumentOutOfRangeException(nameof(output), $"'{nameof(output)}' array segment is not big enough for the ciphertext");
 
 			var counterBuffer = new byte[Cipher.AesConstants.AES_BLOCK_SIZE];
@@ -142,7 +142,6 @@ namespace SecurityDriven.Inferno
 			int cipherLength = ciphertext.Count - CONTEXT_BUFFER_LENGTH - MAC_LENGTH;
 			if (cipherLength < 0) return false;
 
-			var encKey = new byte[ENC_KEY_LENGTH];
 			var macKey = new byte[MAC_KEY_LENGTH];
 			var sessionKey = new byte[HMAC_LENGTH];
 
@@ -166,7 +165,7 @@ namespace SecurityDriven.Inferno
 				}// using hmac
 				return true;
 			}
-			finally { EtM_CTR.ClearKeyMaterial(encKey, macKey, sessionKey); }
+			finally { EtM_CTR.ClearKeyMaterial(encKey: Array.Empty<byte>(), macKey: macKey, sessionKey: sessionKey); }
 		}// Authenticate()
 	}//class EtM_CTR
 }//ns
