@@ -131,16 +131,16 @@ namespace SecurityDriven.Inferno.Kdf
 			this.hmac.Initialize();
 			byte[] buffer3 = hash;
 
-			for (int i = 2; i <= this.iterations; i++)
+			for (int i = 2, blockSize = BlockSize, j = this.iterations; i <= j; i++)
 			{
 				if (hmac2 != null)
 				{
-					hmac2.TransformBlock(hash, 0, BlockSize, null, 0);
+					hmac2.TransformBlock(hash, 0, blockSize, null, 0);
 					hmac2.TransformFinalBlock(hash, 0, 0);
 					hash = hmac2.HashInner;
 				}
 				else hash = this.hmac.ComputeHash(hash);
-				Utils.Xor(dest: buffer3, destOffset: 0, left: hash, leftOffset: 0, byteCount: BlockSize);
+				Utils.Xor(dest: buffer3, destOffset: 0, left: hash, leftOffset: 0, byteCount: blockSize);
 			}
 			this.block++;
 			return buffer3;
