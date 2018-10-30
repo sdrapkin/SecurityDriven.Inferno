@@ -244,3 +244,4 @@ _Doc/*
 *.old
 /SecurityDriven.InfernoCore.sln
 *.bak
+/Cipher/AesCtrCryptoTransform2.cs
