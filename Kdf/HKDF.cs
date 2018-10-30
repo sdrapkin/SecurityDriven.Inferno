@@ -50,8 +50,12 @@ namespace SecurityDriven.Inferno.Kdf
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		protected override void Dispose(bool disposing)
 		{
+			var hmac = this.hmac;
 			if (hmac != null)
+			{
 				hmac.Dispose();
+				this.hmac = null;
+			}
 		}
 
 		public override byte[] GetBytes(int countBytes)
