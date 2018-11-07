@@ -148,7 +148,7 @@ namespace SecurityDriven.Inferno.Cipher
 					{
 						var destVector = new Vector<byte>(outputBuffer, outputOffset + i);
 						var leftVector = new Vector<byte>(inputBuffer, inputOffset + i);
-						Vector.Xor(destVector, leftVector).CopyTo(outputBuffer, outputOffset + i);
+						(destVector ^ leftVector).CopyTo(outputBuffer, outputOffset + i);
 					}
 				}
 

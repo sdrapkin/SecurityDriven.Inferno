@@ -286,7 +286,7 @@ namespace SecurityDriven.Inferno
 		#endregion
 
 		#region Xor
-		[StructLayout(LayoutKind.Explicit, Pack = 1)]
+		[StructLayout(LayoutKind.Explicit, Pack = 0)]
 		internal struct Union
 		{
 			[FieldOffset(0)]
