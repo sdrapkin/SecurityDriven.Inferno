@@ -123,23 +123,28 @@ namespace SecurityDriven.Inferno.Kdf
 		byte[] inputBuffer = new byte[4];
 		byte[] Func()
 		{
-			new Utils.IntStruct { UintValue = this.block }.ToBEBytes(inputBuffer);
+			// localize members
+			var _inputBuffer = this.inputBuffer;
+			var _hmac = this.hmac;
+			var _hmac2 = this.hmac2;
+
+			new Utils.IntStruct { UintValue = this.block }.ToBEBytes(_inputBuffer);
 			this.hmac.TransformBlock(inputBuffer: this.salt, inputOffset: 0, inputCount: this.salt.Length, outputBuffer: null, outputOffset: 0);
-			this.hmac.TransformBlock(inputBuffer: inputBuffer, inputOffset: 0, inputCount: inputBuffer.Length, outputBuffer: null, outputOffset: 0);
-			this.hmac.TransformFinalBlock(inputBuffer: inputBuffer, inputOffset: 0, inputCount: 0);
+			this.hmac.TransformBlock(inputBuffer: _inputBuffer, inputOffset: 0, inputCount: _inputBuffer.Length, outputBuffer: null, outputOffset: 0);
+			this.hmac.TransformFinalBlock(inputBuffer: _inputBuffer, inputOffset: 0, inputCount: 0);
 			byte[] hash = this.hmac.Hash; // creates a copy
 			this.hmac.Initialize();
 			byte[] buffer3 = hash;
 
 			for (int i = 2, blockSize = BlockSize, j = this.iterations; i <= j; i++)
 			{
-				if (hmac2 != null)
+				if (_hmac2 != null)
 				{
-					hmac2.TransformBlock(hash, 0, blockSize, null, 0);
-					hmac2.TransformFinalBlock(hash, 0, 0);
-					hash = hmac2.HashInner;
+					_hmac2.TransformBlock(hash, 0, blockSize, null, 0);
+					_hmac2.TransformFinalBlock(hash, 0, 0);
+					hash = _hmac2.HashInner;
 				}
-				else hash = this.hmac.ComputeHash(hash);
+				else hash = _hmac.ComputeHash(hash);
 				Utils.Xor(dest: buffer3, destOffset: 0, left: hash, leftOffset: 0, byteCount: blockSize);
 			}
 			this.block++;
