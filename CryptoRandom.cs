@@ -58,7 +58,7 @@ namespace SecurityDriven.Inferno
 		public long NextLong()
 		{
 			// Mask away the sign bit so that we always return nonnegative integers
-			return (long)GetRandomULong() & 0x7FFFFFFFFFFFFFFF;
+			return GetRandomLong() & 0x7FFFFFFFFFFFFFFF;
 		}//NextLong()
 
 		/// <summary>
@@ -92,21 +92,33 @@ namespace SecurityDriven.Inferno
 		/// </exception>
 		public long NextLong(long minValue, long maxValue)
 		{
-			if (minValue == maxValue)
-				return minValue;
+			if (minValue == maxValue) return minValue;
 
-			if (minValue > maxValue)
-				throw new ArgumentOutOfRangeException(nameof(minValue));
+			if (minValue > maxValue) throw new ArgumentOutOfRangeException(nameof(minValue));
 
-			ulong diff = decimal.ToUInt64((decimal)maxValue - minValue);
-			ulong upperBound = ulong.MaxValue / diff * diff;
+			// new logic, based on 
+			// https://github.com/dotnet/corefx/blob/067f6a6c4139b2991db1c1e49152b0a86df3fdb2/src/System.Security.Cryptography.Algorithms/src/System/Security/Cryptography/RandomNumberGenerator.cs#L100
 
-			ulong ul;
+			ulong range = (ulong)(maxValue - minValue) - 1;
+
+			// If there is only one possible choice, nothing random will actually happen, so return the only possibility.
+			if (range == 0) return minValue;
+
+			// Create a mask for the bits that we care about for the range. The other bits will be masked away.
+			ulong mask = range;
+			mask |= mask >> 01;
+			mask |= mask >> 02;
+			mask |= mask >> 04;
+			mask |= mask >> 08;
+			mask |= mask >> 16;
+			mask |= mask >> 32;
+
+			ulong result;
 			do
 			{
-				ul = GetRandomULong();
-			} while (ul >= upperBound);
-			return decimal.ToInt64((decimal)minValue + ul % diff);
+				result = (ulong)GetRandomLong() & mask;
+			} while (result > range);
+			return minValue + (long)result;
 		}//NextLong()
 		#endregion
 
@@ -120,7 +132,7 @@ namespace SecurityDriven.Inferno
 		public override int Next()
 		{
 			// Mask away the sign bit so that we always return nonnegative integers
-			return (int)GetRandomUInt() & 0x7FFFFFFF;
+			return GetRandomInt() & 0x7FFFFFFF;
 		}//Next()
 
 		/// <summary>
@@ -154,21 +166,31 @@ namespace SecurityDriven.Inferno
 		/// </exception>
 		public override int Next(int minValue, int maxValue)
 		{
-			if (minValue == maxValue)
-				return minValue;
+			if (minValue == maxValue) return minValue;
+			if (minValue > maxValue) throw new ArgumentOutOfRangeException(nameof(minValue));
 
-			if (minValue > maxValue)
-				throw new ArgumentOutOfRangeException(nameof(minValue));
+			// new logic, based on 
+			// https://github.com/dotnet/corefx/blob/067f6a6c4139b2991db1c1e49152b0a86df3fdb2/src/System.Security.Cryptography.Algorithms/src/System/Security/Cryptography/RandomNumberGenerator.cs#L100
 
-			long diff = (long)maxValue - minValue;
-			long upperBound = uint.MaxValue / diff * diff;
+			uint range = (uint)(maxValue - minValue) - 1;
 
-			uint ui;
+			// If there is only one possible choice, nothing random will actually happen, so return the only possibility.
+			if (range == 0) return minValue;
+
+			// Create a mask for the bits that we care about for the range. The other bits will be masked away.
+			uint mask = range;
+			mask |= mask >> 01;
+			mask |= mask >> 02;
+			mask |= mask >> 04;
+			mask |= mask >> 08;
+			mask |= mask >> 16;
+
+			uint result;
 			do
 			{
-				ui = GetRandomUInt();
-			} while (ui >= upperBound);
-			return (int)(minValue + (ui % diff));
+				result = (uint)GetRandomInt() & mask;
+			} while (result > range);
+			return minValue + (int)result;
 		}//Next()
 		#endregion
 
@@ -181,7 +203,7 @@ namespace SecurityDriven.Inferno
 		public override double NextDouble()
 		{
 			const double max = 1L << 53; // https://en.wikipedia.org/wiki/Double-precision_floating-point_format
-			return (GetRandomULong() >> 11) / max;
+			return ((ulong)GetRandomLong() >> 11) / max;
 		}//NextDouble()
 
 		/// <summary>
@@ -260,56 +282,52 @@ namespace SecurityDriven.Inferno
 		}//NextBytesInternal()
 
 		/// <summary>
-		/// Gets one random unsigned 32bit integer in a thread safe manner.
+		/// Gets one random signed 32bit integer in a thread safe manner.
 		/// </summary>
-		uint GetRandomUInt()
+		int GetRandomInt()
 		{
-			BCrypt.NTSTATUS status;
-
 			lock (_byteCache)
 			{
-				if (_byteCachePosition + sizeof(uint) <= BYTE_CACHE_SIZE)
+				if (_byteCachePosition + sizeof(int) <= BYTE_CACHE_SIZE)
 				{
-					var result = BitConverter.ToUInt32(_byteCache, _byteCachePosition);
-					_byteCachePosition += sizeof(uint);
+					var result = BitConverter.ToInt32(_byteCache, _byteCachePosition);
+					_byteCachePosition += sizeof(int);
 					return result;
 				}
 
-				status = BCrypt.BCryptGenRandom(_byteCache, BYTE_CACHE_SIZE);
+				BCrypt.NTSTATUS status = BCrypt.BCryptGenRandom(_byteCache, BYTE_CACHE_SIZE);
 				if (status == BCrypt.NTSTATUS.STATUS_SUCCESS)
 				{
-					_byteCachePosition = sizeof(uint);
-					return BitConverter.ToUInt32(_byteCache, 0);
+					_byteCachePosition = sizeof(int);
+					return BitConverter.ToInt32(_byteCache, 0);
 				}
 				throw new CryptographicException((int)status);
 			}// lock
-		}//GetRandomUInt()
+		}//GetRandomInt()
 
 		/// <summary>
-		/// Gets one random unsigned 64bit integer in a thread safe manner.
+		/// Gets one random signed 64bit integer in a thread safe manner.
 		/// </summary>
-		ulong GetRandomULong()
+		long GetRandomLong()
 		{
-			BCrypt.NTSTATUS status;
-
 			lock (_byteCache)
 			{
-				if (_byteCachePosition + sizeof(ulong) <= BYTE_CACHE_SIZE)
+				if (_byteCachePosition + sizeof(long) <= BYTE_CACHE_SIZE)
 				{
-					var result = BitConverter.ToUInt64(_byteCache, _byteCachePosition);
-					_byteCachePosition += sizeof(ulong);
+					var result = BitConverter.ToInt64(_byteCache, _byteCachePosition);
+					_byteCachePosition += sizeof(long);
 					return result;
 				}
 
-				status = BCrypt.BCryptGenRandom(_byteCache, BYTE_CACHE_SIZE);
+				BCrypt.NTSTATUS status = BCrypt.BCryptGenRandom(_byteCache, BYTE_CACHE_SIZE);
 				if (status == BCrypt.NTSTATUS.STATUS_SUCCESS)
 				{
-					_byteCachePosition = sizeof(ulong);
-					return BitConverter.ToUInt64(_byteCache, 0);
+					_byteCachePosition = sizeof(long);
+					return BitConverter.ToInt64(_byteCache, 0);
 				}
 				throw new CryptographicException((int)status);
 			}// lock
-		}//GetRandomULong()
+		}//GetRandomLong()
 	}//class CryptoRandom
 
 	#region BCrypt
@@ -349,10 +367,10 @@ namespace SecurityDriven.Inferno
 			return status;
 		}// BCryptGenRandom()
 
-		[DllImport(bcrypt_dll, CharSet = CharSet.Unicode)]
+		[DllImport(bcrypt_dll, CharSet = CharSet.Unicode), System.Security.SuppressUnmanagedCodeSecurity]
 		static extern NTSTATUS BCryptGenRandom(IntPtr hAlgorithm, [In, Out] byte[] pbBuffer, int cbBuffer, int dwFlags);
 
-		[DllImport(bcrypt_dll, CharSet = CharSet.Unicode)]
+		[DllImport(bcrypt_dll, CharSet = CharSet.Unicode), System.Security.SuppressUnmanagedCodeSecurity]
 		static extern NTSTATUS BCryptGenRandom(IntPtr hAlgorithm, [In, Out] IntPtr pbBuffer, int cbBuffer, int dwFlags);
 	}// class BCrypt
 	#endregion

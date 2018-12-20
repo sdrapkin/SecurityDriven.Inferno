@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>netcoreapp2.1;net462</TargetFrameworks>
 		<RootNamespace>SecurityDriven.Inferno</RootNamespace>
-		<Version>1.5.2.0</Version>
+		<Version>1.5.3.0</Version>
 		<Company>http://SecurityDriven.NET/inferno</Company>
 		<PackageId>Inferno</PackageId>
 		<Authors>Stan Drapkin</Authors>
