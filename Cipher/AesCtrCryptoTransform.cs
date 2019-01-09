@@ -143,8 +143,8 @@ namespace SecurityDriven.Inferno.Cipher
 				const bool VECTORIZE = true;
 				if (VECTORIZE)
 				{   // vectorized xor
-					int vectorLength = Vector<byte>.Count, vectorLimit = (fullBlockSize / vectorLength) * vectorLength;
-					for (; i < vectorLimit; i += vectorLength)
+					int vectorLength = Vector<byte>.Count, vectorLimit = fullBlockSize - vectorLength;
+					for (; i <= vectorLimit; i += vectorLength)
 					{
 						var destVector = new Vector<byte>(outputBuffer, outputOffset + i);
 						var leftVector = new Vector<byte>(inputBuffer, inputOffset + i);
