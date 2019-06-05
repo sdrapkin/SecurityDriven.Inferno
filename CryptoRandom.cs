@@ -16,7 +16,7 @@ namespace SecurityDriven.Inferno
 		const int CACHE_THRESHOLD = 64; // 64 yields ~ 1/3 perf ratio between cache hit and BCrypt call to repopulate the cache
 		const int BYTE_CACHE_SIZE = 4096; // 4k buffer seems to work best (empirical experimentation). Buffer must be larger than CACHE_THRESHOLD.
 		readonly byte[] _byteCache = new byte[BYTE_CACHE_SIZE];
-		volatile int _byteCachePosition = BYTE_CACHE_SIZE;
+		int _byteCachePosition = BYTE_CACHE_SIZE;
 
 		static CryptoRandom()
 		{
