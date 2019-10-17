@@ -30,9 +30,9 @@ namespace SecurityDriven.Inferno.Mac
 		{
 			hashAlgorithm = hashFactory();
 			base.HashSizeValue = hashAlgorithm.HashSize;
-#if NET462
+#if NETFRAMEWORK
 			if (hashAlgorithm is SHA384Cng || hashAlgorithm is SHA512Cng || hashAlgorithm is SHA384 || hashAlgorithm is SHA512)
-#elif NETCOREAPP2_1
+#else
 			if (hashAlgorithm is SHA384 || hashAlgorithm is SHA512)
 #endif
 			{

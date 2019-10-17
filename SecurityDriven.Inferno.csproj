@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netcoreapp2.1;net462</TargetFrameworks>
+		<TargetFrameworks>netcoreapp2.1;net462;netstandard2.0</TargetFrameworks>
 		<RootNamespace>SecurityDriven.Inferno</RootNamespace>
 		<Version>1.5.3.0</Version>
 		<Company>http://SecurityDriven.NET/inferno</Company>
@@ -12,31 +12,11 @@
 		<PackageProjectUrl>http://securitydriven.net/inferno/</PackageProjectUrl>
 		<PackageTags>crypto cryptography encryption security</PackageTags>
 		<AssemblyName>SecurityDriven.Inferno</AssemblyName>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-		<LangVersion>latest</LangVersion>
-		<AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netcoreapp2.1|AnyCPU'">
-		<DebugType>pdbonly</DebugType>
-		<DebugSymbols>true</DebugSymbols>
-	</PropertyGroup>
-
-	<ItemGroup>
-		<Compile Remove="Cipher\AesCtrCryptoTransform2.cs" />
-		<Compile Remove="Cipher\AesPool.cs" />
-		<Compile Remove="Mac\HMAC2_old.cs" />
-		<Compile Remove="Mac\HMAC3.cs" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
-		<PackageReference Include="System.Security.Cryptography.Cng" Version="4.5.0" Condition="'$(TargetFramework)' == 'netcoreapp2.1'" />
+		<PackageReference Include="System.Security.Cryptography.Cng" Version="4.5.0" Condition="'$(TargetFramework)' != 'net462'" />
 	</ItemGroup>
 </Project>

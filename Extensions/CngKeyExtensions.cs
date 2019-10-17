@@ -46,10 +46,10 @@ namespace SecurityDriven.Inferno.Extensions
 		/// </summary>
 		public static byte[] GetSharedDhmSecret(this CngKey privateDhmKey, CngKey publicDhmKey, byte[] contextAppend = null, byte[] contextPrepend = null)
 		{
-#if NET462
+#if NETFRAMEWORK
 			using (var ecdh = new ECDiffieHellmanCng(privateDhmKey) { HashAlgorithm = CngAlgorithm.Sha384, SecretAppend = contextAppend, SecretPrepend = contextPrepend })
 				return ecdh.DeriveKeyMaterial(publicDhmKey);
-#elif NETCOREAPP2_1
+#elif NETCOREAPP
 
 			const int P384_POINT_BYTELENGTH = 48;
 			var privateDhmKeyBytes = new ArraySegment<byte>(privateDhmKey.GetPrivateBlob(),
@@ -91,6 +91,10 @@ namespace SecurityDriven.Inferno.Extensions
 					secretAppend: contextAppend
 					);
 			}
+#elif NETSTANDARD2_0
+			throw new PlatformNotSupportedException($"ECDiffieHellman is not supported on .NET Standard 2.0. Please reference \"{typeof(CngKeyExtensions).Assembly.GetName().Name}\" from .NET Framework or .NET Core for ECDiffieHellman support.");
+#else
+#error Unknown target
 #endif
 		}// GetSharedDhmSecret()
 
