@@ -91,6 +91,10 @@ namespace SecurityDriven.Inferno.Extensions
 					secretAppend: contextAppend
 					);
 			}
+#elif NETSTANDARD2_0
+			throw new PlatformNotSupportedException($"ECDiffieHellman is not supported on .NET Standard 2.0. Please reference \"{typeof(CngKeyExtensions).Assembly.GetName().Name}\" from .NET Framework or .NET Core for ECDiffieHellman support.");
+#else
+#error Unknown target
 #endif
 		}// GetSharedDhmSecret()
 

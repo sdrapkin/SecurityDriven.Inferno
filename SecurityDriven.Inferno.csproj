@@ -1,30 +1,37 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netcoreapp2.1;net462</TargetFrameworks>
+		<TargetFrameworks>netcoreapp2.1;net462;netstandard2.0</TargetFrameworks>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<RootNamespace>SecurityDriven.Inferno</RootNamespace>
 		<Version>1.6.0.0</Version>
-		<Company>http://SecurityDriven.NET/inferno</Company>
+		<Company>https://SecurityDriven.NET/inferno</Company>
 		<PackageId>Inferno</PackageId>
 		<Authors>Stan Drapkin</Authors>
 		<Copyright>Copyright (c) 2020 Stan Drapkin</Copyright>
 		<Description>Modern, free, open-source, professionally audited .NET crypto library.</Description>
-		<PackageProjectUrl>http://securitydriven.net/inferno/</PackageProjectUrl>
+		<PackageProjectUrl>https://securitydriven.net/inferno/</PackageProjectUrl>
 		<PackageTags>crypto cryptography encryption security</PackageTags>
 		<AssemblyName>SecurityDriven.Inferno</AssemblyName>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/sdrapkin/SecurityDriven.Inferno</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageIconUrl>https://securitydriven.net/favicon.ico</PackageIconUrl>
+		<PackageReleaseNotes>NetStandard 2.0 support (in addition to net462 and netcoreapp2.1).
+Improvements to EtM Transforms (see commit d9e9563).</PackageReleaseNotes>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
 		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+	<PropertyGroup Condition="'$(Configuration)'=='Release'">
 		<LangVersion>latest</LangVersion>
 		<AllowUnsafeBlocks>false</AllowUnsafeBlocks>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netcoreapp2.1|AnyCPU'">
+	<PropertyGroup Condition="'$(Configuration'=='Release'">
 		<DebugType>pdbonly</DebugType>
 		<DebugSymbols>true</DebugSymbols>
 	</PropertyGroup>
@@ -38,6 +45,6 @@
 
 	<ItemGroup>
 		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
-		<PackageReference Include="System.Security.Cryptography.Cng" Version="4.7.0" Condition="'$(TargetFramework)' == 'netcoreapp2.1'" />
+		<PackageReference Include="System.Security.Cryptography.Cng" Version="4.7.0" Condition="'$(TargetFramework)' != 'net462'" />
 	</ItemGroup>
 </Project>
