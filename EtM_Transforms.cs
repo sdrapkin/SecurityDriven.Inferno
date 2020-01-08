@@ -12,6 +12,8 @@ namespace SecurityDriven.Inferno
 		public const int ETM_CTR_OVERHEAD = EtM_CTR.CONTEXT_TWEAK_LENGTH /* key_tweak */ + EtM_CTR.NONCE_LENGTH /* nonce_tweak */ + EtM_CTR.MAC_LENGTH /* mac */;
 		public const int INPUT_BLOCK_SIZE = (LOH_THRESHOLD - ETM_CTR_OVERHEAD) / AesConstants.AES_BLOCK_SIZE * AesConstants.AES_BLOCK_SIZE; // largest pre-overhead size below LOH divisible by blocksize (to avoid wasting keystream)
 		public const int OUTPUT_BLOCK_SIZE = INPUT_BLOCK_SIZE + ETM_CTR_OVERHEAD;
+
+		internal const int INITIAL_CHUNK_NUMBER = 1;
 	}// class EtM_Transform_Constants
 
 	public class EtM_EncryptTransform : ICryptoTransform
@@ -27,13 +29,31 @@ namespace SecurityDriven.Inferno
 
 		public uint CurrentChunkNumber { get { return this.currentChunkNumber; } }
 
+		internal static void PrependSaltWith1stBlockContext(ref ArraySegment<byte>? salt, byte[] contextBuffer, int contextBufferOffset)
+		{
+			int saltLength = salt?.Count ?? 0;
+			var streamContextCombinedWithSalt = new byte[EtM_CTR.CONTEXT_TWEAK_LENGTH + saltLength];
+
+			for (int i = EtM_CTR.CONTEXT_TWEAK_LENGTH - 1; i >= 0; --i)
+			{
+				streamContextCombinedWithSalt[i] = contextBuffer[contextBufferOffset + i];
+			}
+
+			if (saltLength > 0)
+			{
+				var saltValue = salt.GetValueOrDefault();
+				Utils.BlockCopy(saltValue.Array, saltValue.Offset, streamContextCombinedWithSalt, EtM_CTR.CONTEXT_TWEAK_LENGTH, saltLength);
+			}
+			salt = new ArraySegment<byte>(streamContextCombinedWithSalt);
+		}// PrependSaltWith1stBlockContext()
+
 		/// <summary>ctor</summary>
-		public EtM_EncryptTransform(byte[] key, ArraySegment<byte>? salt = null, uint chunkNumber = 1)
+		public EtM_EncryptTransform(byte[] key, ArraySegment<byte>? salt = null)
 		{
 			if (key == null) throw new ArgumentNullException(nameof(key), nameof(key) + " cannot be null.");
 			this.key = key;
 			this.salt = salt;
-			this.currentChunkNumber = chunkNumber;
+			this.currentChunkNumber = EtM_Transform_Constants.INITIAL_CHUNK_NUMBER;
 		}
 
 		public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
@@ -55,7 +75,14 @@ namespace SecurityDriven.Inferno
 						output: outputBuffer,
 						outputOffset: outputOffset + j,
 						salt: this.salt,
-						counter: checked(this.currentChunkNumber++));
+						counter: this.currentChunkNumber);
+
+					if (this.currentChunkNumber == EtM_Transform_Constants.INITIAL_CHUNK_NUMBER)
+					{
+						EtM_EncryptTransform.PrependSaltWith1stBlockContext(ref this.salt, outputBuffer, outputOffset);
+					}
+
+					checked { ++this.currentChunkNumber; }
 				}
 			}
 			return j;
@@ -105,12 +132,12 @@ namespace SecurityDriven.Inferno
 		public uint CurrentChunkNumber { get { return this.currentChunkNumber; } }
 
 		/// <summary>ctor</summary>
-		public EtM_DecryptTransform(byte[] key, ArraySegment<byte>? salt = null, uint chunkNumber = 1, bool authenticateOnly = false)
+		public EtM_DecryptTransform(byte[] key, ArraySegment<byte>? salt = null, bool authenticateOnly = false)
 		{
 			if (key == null) throw new ArgumentNullException(nameof(key), nameof(key) + " cannot be null.");
 			this.key = key;
 			this.salt = salt;
-			this.currentChunkNumber = chunkNumber;
+			this.currentChunkNumber = EtM_Transform_Constants.INITIAL_CHUNK_NUMBER;
 			this.IsAuthenticateOnly = authenticateOnly;
 		}
 
@@ -125,13 +152,13 @@ namespace SecurityDriven.Inferno
 			int i = 0, j = 0;
 			if (fullBlockSize > 0)
 			{
-				var authenticateonly = this.IsAuthenticateOnly;
+				var authenticateOnly = this.IsAuthenticateOnly;
 				for (; i < fullBlockSize; i += EtM_Transform_Constants.OUTPUT_BLOCK_SIZE, j += EtM_Transform_Constants.INPUT_BLOCK_SIZE)
 				{
 					var outputSegment = new ArraySegment<byte>?(new ArraySegment<byte>(outputBuffer, outputOffset + j, EtM_Transform_Constants.INPUT_BLOCK_SIZE));
 					var cipherText = new ArraySegment<byte>(inputBuffer, inputOffset + i, EtM_Transform_Constants.OUTPUT_BLOCK_SIZE);
 
-					if (authenticateonly)
+					if (authenticateOnly)
 					{
 						if (!EtM_CTR.Authenticate(
 							masterKey: this.key,
@@ -155,7 +182,13 @@ namespace SecurityDriven.Inferno
 						this.key = null;
 						throw new CryptographicException("Decryption failed for block " + this.currentChunkNumber.ToString() + ".");
 					}
-					this.currentChunkNumber = checked(this.currentChunkNumber + 1);
+
+					if (this.currentChunkNumber == EtM_Transform_Constants.INITIAL_CHUNK_NUMBER)
+					{
+						EtM_EncryptTransform.PrependSaltWith1stBlockContext(ref this.salt, inputBuffer, inputOffset);
+					}
+
+					checked { ++this.currentChunkNumber; }
 				}
 			}
 			return j;
