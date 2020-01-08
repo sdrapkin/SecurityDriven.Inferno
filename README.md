@@ -2,4 +2,4 @@
 .NET crypto done right.
 
 ### [Documentation](http://SecurityDriven.NET/inferno/)
-[![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.me/sdrapkin)
+[![Contribute](https://img.shields.io/badge/Contribute-PayPal-blue.svg)](https://www.paypal.me/sdrapkin)
