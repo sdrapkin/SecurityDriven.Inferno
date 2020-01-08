@@ -48,6 +48,7 @@ namespace SecurityDriven.Inferno
 		public static bool ConstantTimeEqual(byte[] x, int xOffset, byte[] y, int yOffset, int length)
 		{
 			// based on https://github.com/CodesInChaos/Chaos.NaCl/blob/55e84738252932fa123eaa7bb0dd9cb99de0ceb9/Chaos.NaCl/CryptoBytes.cs (public domain)
+			// another sanity reference: https://golang.org/src/crypto/subtle/constant_time.go
 			// Null checks of "x" and "y" are skipped. Appropriate exceptions will be raised anyway.
 
 			if (xOffset < 0)
