@@ -122,7 +122,7 @@ namespace SecurityDriven.Inferno.Mac
 
 				if (base.KeyValue != null)
 				{
-					Array.Clear(this.KeyValue, 0, this.KeyValue.Length);
+					Unsafe.InitBlock(ref this.KeyValue[0], 0, (uint)this.KeyValue.Length);//Array.Clear(this.KeyValue, 0, this.KeyValue.Length);
 					this.KeyValue = null;
 				}
 			}
