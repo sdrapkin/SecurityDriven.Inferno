@@ -14,10 +14,10 @@ namespace SecurityDriven.Inferno.Kdf
 	{
 		const int COUNTER_LENGTH = sizeof(uint), DERIVED_KEY_LENGTH_LENGTH = sizeof(uint);
 
-		internal static byte[] CreateBuffer(ArraySegment<byte>? label, ArraySegment<byte>? context, uint keyLengthInBits)
+		internal static byte[] CreateBuffer(ref ArraySegment<byte>? label, ref ArraySegment<byte>? context, uint keyLengthInBits)
 		{
-			int labelLength = (label != null) ? label.GetValueOrDefault().Count : 0;
-			int contextLength = (context != null) ? context.GetValueOrDefault().Count : 0;
+			int labelLength = label?.Count ?? 0;
+			int contextLength = context?.Count ?? 0;
 			int bufferLength = (COUNTER_LENGTH /* counter */) + (labelLength + 1 /* label + 0x00 */) + (contextLength /* context */) + (DERIVED_KEY_LENGTH_LENGTH /* [L]_2 */);
 			var buffer = new byte[bufferLength];
 
@@ -57,12 +57,12 @@ namespace SecurityDriven.Inferno.Kdf
 			using (var hmac = hmacFactory())
 			{
 				hmac.Key = key;
-				var buffer = CreateBuffer(label: label, context: context, keyLengthInBits: checked((uint)(derivedOutput.Count << 3)));
-				DeriveKey(hmac, buffer.AsArraySegment(), derivedOutput, counter);
+				var buffer = CreateBuffer(label: ref label, context: ref context, keyLengthInBits: checked((uint)(derivedOutput.Count << 3)));
+				DeriveKey(hmac, buffer, ref derivedOutput, counter);
 			}
 		}// DeriveKey()
 
-		internal static void DeriveKey(HMAC keyedHmac, ArraySegment<byte> bufferSegment, ArraySegment<byte> derivedOutput, uint counter = 1)
+		internal static void DeriveKey(HMAC keyedHmac, byte[] bufferArray, ref ArraySegment<byte> derivedOutput, uint counter = 1)
 		{
 			int derivedOutputCount = derivedOutput.Count, derivedOutputOffset = derivedOutput.Offset;
 			var derivedOutputArray = derivedOutput.Array;
@@ -73,16 +73,16 @@ namespace SecurityDriven.Inferno.Kdf
 				// Calculate each K_i value and copy the leftmost bits to the output buffer as appropriate.
 				for (var counterStruct = new Utils.IntStruct { UintValue = counter }; derivedOutputCount > 0; ++counterStruct.UintValue)
 				{
-					counterStruct.ToBEBytes(bufferSegment.Array, bufferSegment.Offset); // update the counter within the buffer
+					counterStruct.ToBEBytes(bufferArray, 0); // update the counter within the buffer
 
 					if (keyedHmac2 == null)
 					{
-						K_i = keyedHmac.ComputeHash(bufferSegment.Array, bufferSegment.Offset, bufferSegment.Count);
+						K_i = keyedHmac.ComputeHash(bufferArray);
 					}
 					else
 					{
-						keyedHmac2.TransformBlock(bufferSegment.Array, bufferSegment.Offset, bufferSegment.Count, null, 0);
-						keyedHmac2.TransformFinalBlock(bufferSegment.Array, 0, 0);
+						keyedHmac2.TransformBlock(bufferArray, 0, bufferArray.Length, null, 0);
+						keyedHmac2.TransformFinalBlock(bufferArray, 0, 0);
 						K_i = keyedHmac2.HashInner;
 					}
 
