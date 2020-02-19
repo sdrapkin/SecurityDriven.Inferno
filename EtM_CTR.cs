@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
-using System.Threading;
 
 namespace SecurityDriven.Inferno
 {
@@ -23,7 +22,7 @@ namespace SecurityDriven.Inferno
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static void ClearKeyMaterial(byte[] encKey, byte[] macKey, byte[] sessionKey)
 		{
-			for (int i = 0; i < encKey.Length; ++i) encKey[i] = 0;  //Array.Clear(encKey, 0, encKey.Length);
+			for (int i = 0; i < encKey.Length; ++i) encKey[i] = 0;  //Array.Clear(encKey, 0, encKey.Length);			
 			for (int j = 0; j < macKey.Length; ++j) macKey[j] = 0;  //Array.Clear(macKey, 0, macKey.Length);
 			Array.Clear(sessionKey, 0, sessionKey.Length);
 		}// ClearKeyMaterial()
