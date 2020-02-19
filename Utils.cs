@@ -157,17 +157,11 @@ namespace SecurityDriven.Inferno
 			{
 				if (BitConverter.IsLittleEndian)
 				{
-					buffer[offset + 0] = B4;
-					buffer[offset + 1] = B3;
-					buffer[offset + 2] = B2;
-					buffer[offset + 3] = B1;
+					Unsafe.As<byte, uint>(ref buffer[offset]) = Utils.ReverseEndianness(UintValue);
 				}
 				else
 				{
-					buffer[offset + 0] = B1;
-					buffer[offset + 1] = B2;
-					buffer[offset + 2] = B3;
-					buffer[offset + 3] = B4;
+					Unsafe.As<byte, uint>(ref buffer[offset]) = UintValue;
 				}
 			}// ToBEBytes()
 		}// IntStruct
@@ -207,25 +201,11 @@ namespace SecurityDriven.Inferno
 			{
 				if (BitConverter.IsLittleEndian)
 				{
-					buffer[offset + 0] = B8;
-					buffer[offset + 1] = B7;
-					buffer[offset + 2] = B6;
-					buffer[offset + 3] = B5;
-					buffer[offset + 4] = B4;
-					buffer[offset + 5] = B3;
-					buffer[offset + 6] = B2;
-					buffer[offset + 7] = B1;
+					Unsafe.As<byte, ulong>(ref buffer[offset]) = Utils.ReverseEndianness(UlongValue);
 				}
 				else
 				{
-					buffer[offset + 0] = B1;
-					buffer[offset + 1] = B2;
-					buffer[offset + 2] = B3;
-					buffer[offset + 3] = B4;
-					buffer[offset + 4] = B5;
-					buffer[offset + 5] = B6;
-					buffer[offset + 6] = B7;
-					buffer[offset + 7] = B8;
+					Unsafe.As<byte, ulong>(ref buffer[offset]) = UlongValue;
 				}
 			}// ToBEBytes()
 		}// LongStruct
@@ -325,11 +305,29 @@ namespace SecurityDriven.Inferno
 			for (; i < byteCount; ++i) dest[destOffset + i] ^= left[leftOffset + i];
 		}// Xor()
 		#endregion
+
+		#region ReverseEndianness
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		internal static ulong ReverseEndianness(ulong value)
+		{
+			return ((ulong)ReverseEndianness((uint)value) << 32) + ReverseEndianness((uint)(value >> 32));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		internal static uint ReverseEndianness(uint value)
+		{
+			(uint xx_zz, uint ww_yy) = (value & 0x00FF00FF, value & 0xFF00FF00);
+			return ((xx_zz >> 8) | (xx_zz << 24)) | ((ww_yy << 8) | (ww_yy >> 24));
+		}
+		#endregion
 	}// class Utils
 
 	public static class ArraySegmentExtensions
 	{
-		public static ArraySegment<T> AsArraySegment<T>(this T[] arr) { return new ArraySegment<T>(arr); }
-		public static ArraySegment<T>? AsNullableArraySegment<T>(this T[] arr) { return new ArraySegment<T>?(new ArraySegment<T>(arr)); }
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ArraySegment<T> AsArraySegment<T>(this T[] arr) => new ArraySegment<T>(arr);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ArraySegment<T>? AsNullableArraySegment<T>(this T[] arr) => new ArraySegment<T>?(new ArraySegment<T>(arr));
 	}// class ArraySegmentExtensions
 }//ns
