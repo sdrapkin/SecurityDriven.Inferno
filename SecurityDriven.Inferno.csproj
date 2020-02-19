@@ -4,7 +4,7 @@
 		<TargetFrameworks>netcoreapp2.1;net462;netstandard2.0</TargetFrameworks>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<RootNamespace>SecurityDriven.Inferno</RootNamespace>
-		<Version>1.6.0.0</Version>
+		<Version>1.6.0.1</Version>
 		<Company>https://SecurityDriven.NET/inferno</Company>
 		<PackageId>Inferno</PackageId>
 		<Authors>Stan Drapkin</Authors>
@@ -18,8 +18,8 @@
 		<RepositoryUrl>https://github.com/sdrapkin/SecurityDriven.Inferno</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>https://securitydriven.net/favicon.ico</PackageIconUrl>
-		<PackageReleaseNotes>NetStandard 2.0 support (in addition to net462 and netcoreapp2.1).
-Improvements to EtM Transforms (see commit d9e9563).</PackageReleaseNotes>
+		<PackageReleaseNotes>Symmetric encryption is now ~10% faster.
+CryptoRandom: performance improvements.</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
@@ -29,9 +29,6 @@ Improvements to EtM Transforms (see commit d9e9563).</PackageReleaseNotes>
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
 		<LangVersion>latest</LangVersion>
 		<AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration'=='Release'">
 		<DebugType>pdbonly</DebugType>
 		<DebugSymbols>true</DebugSymbols>
 	</PropertyGroup>
@@ -45,6 +42,8 @@ Improvements to EtM Transforms (see commit d9e9563).</PackageReleaseNotes>
 
 	<ItemGroup>
 		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.7.0" />
 		<PackageReference Include="System.Security.Cryptography.Cng" Version="4.7.0" Condition="'$(TargetFramework)' != 'net462'" />
 	</ItemGroup>
+
 </Project>
