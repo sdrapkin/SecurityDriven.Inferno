@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Threading;
 
 namespace SecurityDriven.Inferno
 {
@@ -37,14 +37,14 @@ namespace SecurityDriven.Inferno
 			const int COLLISION_FREE_BLOCK_SIZE = 16;
 
 			status = (int)BCrypt.BCryptGenRandom(testBuffer, testBuffer.Length);
-			if (status != (int)BCrypt.NTSTATUS.STATUS_SUCCESS) throw new CryptographicException(status);
+			if (status != (int)BCrypt.NTSTATUS.STATUS_SUCCESS) ThrowNewCryptographicException(status);
 
 			if (testBuffer.Length < COLLISION_FREE_BLOCK_SIZE * 2) return; // should be compiled away
 			for (i = 0; i < testBuffer.Length - COLLISION_FREE_BLOCK_SIZE; i += COLLISION_FREE_BLOCK_SIZE)
 			{
 				for (j = 0, status = 0; j < COLLISION_FREE_BLOCK_SIZE; ++j)
 					status |= testBuffer[i + j] ^ testBuffer[i + j + COLLISION_FREE_BLOCK_SIZE];
-				if (status == 0) throw new CryptographicException("CryptoRandom failed sanity check #2.");
+				if (status == 0) ThrowNewCryptographicException("CryptoRandom failed sanity check #2.");
 			}
 		}// SanityCheck()
 
@@ -74,7 +74,7 @@ namespace SecurityDriven.Inferno
 		public long NextLong(long maxValue)
 		{
 			if (maxValue < 0)
-				throw new ArgumentOutOfRangeException(nameof(maxValue));
+				ThrowNewArgumentOutOfRangeException(nameof(maxValue));
 
 			return NextLong(0, maxValue);
 		}//NextLong()
@@ -94,7 +94,7 @@ namespace SecurityDriven.Inferno
 		{
 			if (minValue == maxValue) return minValue;
 
-			if (minValue > maxValue) throw new ArgumentOutOfRangeException(nameof(minValue));
+			if (minValue > maxValue) ThrowNewArgumentOutOfRangeException(nameof(minValue));
 
 			// new logic, based on 
 			// https://github.com/dotnet/corefx/blob/067f6a6c4139b2991db1c1e49152b0a86df3fdb2/src/System.Security.Cryptography.Algorithms/src/System/Security/Cryptography/RandomNumberGenerator.cs#L100
@@ -148,7 +148,7 @@ namespace SecurityDriven.Inferno
 		public override int Next(int maxValue)
 		{
 			if (maxValue < 0)
-				throw new ArgumentOutOfRangeException(nameof(maxValue));
+				ThrowNewArgumentOutOfRangeException(nameof(maxValue));
 
 			return Next(0, maxValue);
 		}//Next()
@@ -167,7 +167,7 @@ namespace SecurityDriven.Inferno
 		public override int Next(int minValue, int maxValue)
 		{
 			if (minValue == maxValue) return minValue;
-			if (minValue > maxValue) throw new ArgumentOutOfRangeException(nameof(minValue));
+			if (minValue > maxValue) ThrowNewArgumentOutOfRangeException(nameof(minValue));
 
 			// new logic, based on 
 			// https://github.com/dotnet/corefx/blob/067f6a6c4139b2991db1c1e49152b0a86df3fdb2/src/System.Security.Cryptography.Algorithms/src/System/Security/Cryptography/RandomNumberGenerator.cs#L100
@@ -242,23 +242,20 @@ namespace SecurityDriven.Inferno
 		/// </exception>
 		public void NextBytes(byte[] buffer, int offset, int count)
 		{
-			var checkedBufferSegment = new ArraySegment<byte>(buffer, offset, count); // bounds-validation happens here
+			new ArraySegment<byte>(buffer, offset, count); // bounds-validation happens here
 			if (count == 0) return;
-			NextBytesInternal(checkedBufferSegment);
+			NextBytesInternal(buffer, offset, count);
 		}//NextBytes()
 
-		void NextBytesInternal(ArraySegment<byte> bufferSegment)
+		void NextBytesInternal(byte[] buffer, int offset, int count)
 		{
 			BCrypt.NTSTATUS status;
-			var buffer = bufferSegment.Array;
-			var offset = bufferSegment.Offset;
-			var count = bufferSegment.Count;
 
 			if (count > CACHE_THRESHOLD)
 			{
-				status = (offset == 0) ? BCrypt.BCryptGenRandom(buffer, count) : BCrypt.BCryptGenRandom_PinnedBuffer(buffer, offset, count);
+				status = (offset == 0) ? BCrypt.BCryptGenRandom(buffer, count) : BCrypt.BCryptGenRandom_WithOffset(buffer, offset, count);
 				if (status == BCrypt.NTSTATUS.STATUS_SUCCESS) return;
-				throw new CryptographicException((int)status);
+				ThrowNewCryptographicException((int)status);
 			}
 
 			lock (_byteCache)
@@ -277,7 +274,7 @@ namespace SecurityDriven.Inferno
 					Utils.BlockCopy(_byteCache, 0, buffer, offset, count);
 					return;
 				}
-				throw new CryptographicException((int)status);
+				ThrowNewCryptographicException((int)status);
 			}// lock
 		}//NextBytesInternal()
 
@@ -290,7 +287,7 @@ namespace SecurityDriven.Inferno
 			{
 				if (_byteCachePosition + sizeof(int) <= BYTE_CACHE_SIZE)
 				{
-					var result = BitConverter.ToInt32(_byteCache, _byteCachePosition);
+					var result = Unsafe.As<byte, int>(ref _byteCache[_byteCachePosition]);//BitConverter.ToInt32(_byteCache, _byteCachePosition);
 					_byteCachePosition += sizeof(int);
 					return result;
 				}
@@ -299,9 +296,9 @@ namespace SecurityDriven.Inferno
 				if (status == BCrypt.NTSTATUS.STATUS_SUCCESS)
 				{
 					_byteCachePosition = sizeof(int);
-					return BitConverter.ToInt32(_byteCache, 0);
+					return Unsafe.As<byte, int>(ref _byteCache[0]);//BitConverter.ToInt32(_byteCache, 0);
 				}
-				throw new CryptographicException((int)status);
+				return ThrowNewCryptographicException((int)status);
 			}// lock
 		}//GetRandomInt()
 
@@ -314,7 +311,7 @@ namespace SecurityDriven.Inferno
 			{
 				if (_byteCachePosition + sizeof(long) <= BYTE_CACHE_SIZE)
 				{
-					var result = BitConverter.ToInt64(_byteCache, _byteCachePosition);
+					var result = Unsafe.As<byte, long>(ref _byteCache[_byteCachePosition]);//BitConverter.ToInt64(_byteCache, _byteCachePosition);
 					_byteCachePosition += sizeof(long);
 					return result;
 				}
@@ -323,11 +320,16 @@ namespace SecurityDriven.Inferno
 				if (status == BCrypt.NTSTATUS.STATUS_SUCCESS)
 				{
 					_byteCachePosition = sizeof(long);
-					return BitConverter.ToInt64(_byteCache, 0);
+					return Unsafe.As<byte, long>(ref _byteCache[0]);//BitConverter.ToInt64(_byteCache, 0);
 				}
-				throw new CryptographicException((int)status);
+				return ThrowNewCryptographicException((int)status);
 			}// lock
 		}//GetRandomLong()
+
+		static int ThrowNewCryptographicException(int hr) => throw new CryptographicException(hr);
+		static void ThrowNewCryptographicException(string message) => throw new CryptographicException(message);
+
+		static void ThrowNewArgumentOutOfRangeException(string paramName) => throw new ArgumentOutOfRangeException(paramName);
 	}//class CryptoRandom
 
 	#region BCrypt
@@ -340,11 +342,20 @@ namespace SecurityDriven.Inferno
 		// https://msdn.microsoft.com/en-ca/library/cc704588.aspx
 		internal enum NTSTATUS : uint { STATUS_SUCCESS = 0x0 } // and many other "failure" statuses we have no need to differentiate
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		internal static NTSTATUS BCryptGenRandom(byte[] pbBuffer, int cbBuffer)
 		{
 			Debug.Assert(pbBuffer != null);
 			Debug.Assert(cbBuffer >= 0 && cbBuffer <= pbBuffer.Length);
-			return BCryptGenRandom(IntPtr.Zero, pbBuffer, cbBuffer, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+			return BCryptGenRandom(default, pbBuffer, cbBuffer, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		internal static NTSTATUS BCryptGenRandom_WithOffset(byte[] pbBuffer, int obBuffer, int cbBuffer)
+		{
+			Debug.Assert(pbBuffer != null);
+			Debug.Assert(cbBuffer >= 0 && obBuffer >= 0 && (obBuffer + cbBuffer) <= pbBuffer.Length);
+			return BCryptGenRandom(default, ref pbBuffer[obBuffer], cbBuffer, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
 		}
 
 		internal static NTSTATUS BCryptGenRandom_PinnedBuffer(byte[] pbBuffer, int obBuffer, int cbBuffer)
@@ -357,7 +368,7 @@ namespace SecurityDriven.Inferno
 			try
 			{
 				pinnedBufferHandle = GCHandle.Alloc(pbBuffer, GCHandleType.Pinned);
-				status = BCrypt.BCryptGenRandom(IntPtr.Zero, pinnedBufferHandle.AddrOfPinnedObject() + obBuffer, cbBuffer, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+				status = BCrypt.BCryptGenRandom(default, pinnedBufferHandle.AddrOfPinnedObject() + obBuffer, cbBuffer, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
 			}
 			finally
 			{
@@ -368,10 +379,13 @@ namespace SecurityDriven.Inferno
 		}// BCryptGenRandom()
 
 		[DllImport(bcrypt_dll, CharSet = CharSet.Unicode), System.Security.SuppressUnmanagedCodeSecurity]
-		static extern NTSTATUS BCryptGenRandom(IntPtr hAlgorithm, [In, Out] byte[] pbBuffer, int cbBuffer, int dwFlags);
+		static extern NTSTATUS BCryptGenRandom(IntPtr hAlgorithm, [Out] byte[] pbBuffer, int cbBuffer, int dwFlags);
 
 		[DllImport(bcrypt_dll, CharSet = CharSet.Unicode), System.Security.SuppressUnmanagedCodeSecurity]
 		static extern NTSTATUS BCryptGenRandom(IntPtr hAlgorithm, [In, Out] IntPtr pbBuffer, int cbBuffer, int dwFlags);
+
+		[DllImport(bcrypt_dll, CharSet = CharSet.Unicode), System.Security.SuppressUnmanagedCodeSecurity]
+		static extern NTSTATUS BCryptGenRandom(IntPtr hAlgorithm, [In, Out] ref byte pbBuffer, int cbBuffer, int dwFlags);
 	}// class BCrypt
 	#endregion
 }//ns
