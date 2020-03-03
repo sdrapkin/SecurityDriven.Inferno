@@ -30,7 +30,7 @@ namespace SecurityDriven.Inferno.Otp
 				hmac.Key = secret;
 
 				hmac.TransformBlock(timestepAsBytes, 0, timestepAsBytes.Length, null, 0);
-				if (!String.IsNullOrEmpty(modifier))
+				if (!string.IsNullOrEmpty(modifier))
 				{
 					byte[] modifierbytes = modifier.ToBytes();
 					hmac.TransformBlock(modifierbytes, 0, modifierbytes.Length, null, 0);
@@ -71,14 +71,14 @@ namespace SecurityDriven.Inferno.Otp
 		#region public
 		public static DateTime GetExpiryTime(Func<DateTime> timeFactory = null)
 		{
-			if (timeFactory == null) timeFactory = _timeFactory;
+			timeFactory ??= _timeFactory;
 			long nextTimeStep = checked(GetCurrentTimeStepNumber(timeFactory) + 1);
 			return _unixEpoch.AddTicks(checked(nextTimeStep * _timeStepTicks));
 		}//GetExpiryTime()
 
 		public static int GenerateTOTP(byte[] secret, Func<DateTime> timeFactory = null, int totpLength = DEFAULT_TOTP_LENGTH, string modifier = null)
 		{
-			if (timeFactory == null) timeFactory = _timeFactory;
+			timeFactory ??= _timeFactory;
 			long currentTimeStep = GetCurrentTimeStepNumber(timeFactory);
 
 			return ComputeTotp(secret, currentTimeStep, totpLength, modifier);
@@ -86,7 +86,7 @@ namespace SecurityDriven.Inferno.Otp
 
 		public static bool ValidateTOTP(byte[] secret, int totp, Func<DateTime> timeFactory = null, int totpLength = DEFAULT_TOTP_LENGTH, string modifier = null)
 		{
-			if (timeFactory == null) timeFactory = _timeFactory;
+			timeFactory ??= _timeFactory;
 			long currentTimeStep = GetCurrentTimeStepNumber(timeFactory);
 
 			bool result = false;
