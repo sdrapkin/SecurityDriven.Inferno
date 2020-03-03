@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 
 namespace SecurityDriven.Inferno
 {
-	//https://www.nsa.gov/ia/programs/suiteb_cryptography/ - TOP SECRET MODE only
+	//https://cryptome.org/2016/01/CNSA-Suite-and-Quantum-Computing-FAQ.pdf - TOP SECRET MODE only
 	public static class SuiteB
 	{
 		public static readonly Func<SHA384> HashFactory = Hash.HashFactories.SHA384;
