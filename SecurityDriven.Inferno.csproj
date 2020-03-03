@@ -2,6 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>netcoreapp2.1;net462;netstandard2.0</TargetFrameworks>
+		<LangVersion>8.0</LangVersion>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<RootNamespace>SecurityDriven.Inferno</RootNamespace>
 		<Version>1.6.0.1</Version>
@@ -22,12 +23,7 @@
 CryptoRandom: performance improvements.</PackageReleaseNotes>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
-		<LangVersion>latest</LangVersion>
-	</PropertyGroup>
-
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
-		<LangVersion>latest</LangVersion>
 		<AllowUnsafeBlocks>false</AllowUnsafeBlocks>
 		<DebugType>pdbonly</DebugType>
 		<DebugSymbols>true</DebugSymbols>
