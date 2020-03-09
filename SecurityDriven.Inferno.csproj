@@ -5,7 +5,7 @@
 		<LangVersion>8.0</LangVersion>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<RootNamespace>SecurityDriven.Inferno</RootNamespace>
-		<Version>1.6.0.1</Version>
+		<Version>1.6.2.0</Version>
 		<Company>https://SecurityDriven.NET/inferno</Company>
 		<PackageId>Inferno</PackageId>
 		<Authors>Stan Drapkin</Authors>
@@ -19,8 +19,8 @@
 		<RepositoryUrl>https://github.com/sdrapkin/SecurityDriven.Inferno</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>https://securitydriven.net/favicon.ico</PackageIconUrl>
-		<PackageReleaseNotes>Symmetric encryption is now ~10% faster.
-CryptoRandom: performance improvements.</PackageReleaseNotes>
+		<PackageReleaseNotes>Bug fix.
+(CngKeyExtensions.GetSharedDhmSecret() was throwing not-supported-exception on NetCore)</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
