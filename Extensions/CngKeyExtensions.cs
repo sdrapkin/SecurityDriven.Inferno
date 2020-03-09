@@ -46,10 +46,11 @@ namespace SecurityDriven.Inferno.Extensions
 		/// </summary>
 		public static byte[] GetSharedDhmSecret(this CngKey privateDhmKey, CngKey publicDhmKey, byte[] contextAppend = null, byte[] contextPrepend = null)
 		{
-#if NET462
+#if (NET462 || NETCOREAPP2_1)
 			using (var ecdh = new ECDiffieHellmanCng(privateDhmKey) { HashAlgorithm = CngAlgorithm.Sha384, SecretAppend = contextAppend, SecretPrepend = contextPrepend })
 				return ecdh.DeriveKeyMaterial(publicDhmKey);
-#elif NETCOREAPP2_1
+
+#elif __NETCOREAPP2_1
 
 			const int P384_POINT_BYTELENGTH = 48;
 			var privateDhmKeyBytes = new ArraySegment<byte>(privateDhmKey.GetPrivateBlob(),
@@ -77,7 +78,7 @@ namespace SecurityDriven.Inferno.Extensions
 				Q = new ECPoint
 				{
 					X = publicDhmKeyBytes.Skip(00).Take(P384_POINT_BYTELENGTH).ToArray(),
-					Y = privateDhmKeyBytes.Skip(P384_POINT_BYTELENGTH).Take(P384_POINT_BYTELENGTH).ToArray()
+					Y = publicDhmKeyBytes.Skip(P384_POINT_BYTELENGTH).Take(P384_POINT_BYTELENGTH).ToArray()
 				},
 			};
 
