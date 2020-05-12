@@ -20,6 +20,9 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>https://securitydriven.net/favicon.ico</PackageIconUrl>
 		<PackageReleaseNotes>Bug fix. (Aes factory was throwing on Linux)</PackageReleaseNotes>
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>Inferno.snk</AssemblyOriginatorKeyFile>
+		<DelaySign>false</DelaySign>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
@@ -37,7 +40,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
-		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.7.0" />
+		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="5.0.0-preview.3.20214.6" />
 		<PackageReference Include="System.Security.Cryptography.Cng" Version="4.7.0" Condition="'$(TargetFramework)' != 'net462'" />
 	</ItemGroup>
 
