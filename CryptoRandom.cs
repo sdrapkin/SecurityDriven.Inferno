@@ -358,6 +358,7 @@ namespace SecurityDriven.Inferno
 			return BCryptGenRandom(default, ref pbBuffer[obBuffer], cbBuffer, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
 		}
 
+		/* No longer used
 		internal static NTSTATUS BCryptGenRandom_PinnedBuffer(byte[] pbBuffer, int obBuffer, int cbBuffer)
 		{
 			Debug.Assert(pbBuffer != null);
@@ -377,6 +378,7 @@ namespace SecurityDriven.Inferno
 
 			return status;
 		}// BCryptGenRandom()
+		*/
 
 		[DllImport(bcrypt_dll, CharSet = CharSet.Unicode), System.Security.SuppressUnmanagedCodeSecurity]
 		static extern NTSTATUS BCryptGenRandom(IntPtr hAlgorithm, [Out] byte[] pbBuffer, int cbBuffer, int dwFlags);
