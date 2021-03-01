@@ -342,12 +342,20 @@ namespace SecurityDriven.Inferno
 		// https://msdn.microsoft.com/en-ca/library/cc704588.aspx
 		internal enum NTSTATUS : uint { STATUS_SUCCESS = 0x0 } // and many other "failure" statuses we have no need to differentiate
 
+		static readonly bool s_isWindows = Environment.OSVersion.Platform == PlatformID.Win32NT;
+		static readonly RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		internal static NTSTATUS BCryptGenRandom(byte[] pbBuffer, int cbBuffer)
 		{
 			Debug.Assert(pbBuffer != null);
 			Debug.Assert(cbBuffer >= 0 && cbBuffer <= pbBuffer.Length);
-			return BCryptGenRandom(default, pbBuffer, cbBuffer, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+
+			if (s_isWindows)
+				return BCryptGenRandom(default, pbBuffer, cbBuffer, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+
+			s_rng.GetBytes(pbBuffer, 0, cbBuffer);
+			return NTSTATUS.STATUS_SUCCESS;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -355,7 +363,12 @@ namespace SecurityDriven.Inferno
 		{
 			Debug.Assert(pbBuffer != null);
 			Debug.Assert(cbBuffer >= 0 && obBuffer >= 0 && (obBuffer + cbBuffer) <= pbBuffer.Length);
-			return BCryptGenRandom(default, ref pbBuffer[obBuffer], cbBuffer, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+
+			if (s_isWindows)
+				return BCryptGenRandom(default, ref pbBuffer[obBuffer], cbBuffer, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+
+			s_rng.GetBytes(pbBuffer, obBuffer, cbBuffer);
+			return NTSTATUS.STATUS_SUCCESS;
 		}
 
 		/* No longer used
