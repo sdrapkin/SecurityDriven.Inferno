@@ -247,6 +247,17 @@ namespace SecurityDriven.Inferno
 			NextBytesInternal(buffer, offset, count);
 		}//NextBytes()
 
+#if (NETCOREAPP2_1 || NETSTANDARD2_1)
+		/// <summary>Fills the elements of a specified span of bytes with cryptographically strong random values.</summary>
+		/// <param name="buffer">The span to be filled.</param>
+		public override void NextBytes(Span<byte> buffer)
+		{
+			var count = buffer.Length;
+			if (count == 0) return;
+			NextBytesInternal_Span(buffer, count);
+		}
+#endif
+
 		void NextBytesInternal(byte[] buffer, int offset, int count)
 		{
 			BCrypt.NTSTATUS status;
@@ -277,6 +288,39 @@ namespace SecurityDriven.Inferno
 				ThrowNewCryptographicException((int)status);
 			}// lock
 		}//NextBytesInternal()
+
+#if (NETCOREAPP2_1 || NETSTANDARD2_1)
+		void NextBytesInternal_Span(Span<byte> buffer, int count)
+		{
+			BCrypt.NTSTATUS status;
+
+			if (count > CACHE_THRESHOLD)
+			{
+				status = BCrypt.BCryptGenRandom_Span(buffer);
+				if (status == BCrypt.NTSTATUS.STATUS_SUCCESS) return;
+				ThrowNewCryptographicException((int)status);
+			}
+
+			lock (_byteCache)
+			{
+				if (_byteCachePosition + count <= BYTE_CACHE_SIZE)
+				{
+					new Span<byte>(_byteCache, _byteCachePosition, count).CopyTo(buffer);
+					_byteCachePosition += count;
+					return;
+				}
+
+				status = BCrypt.BCryptGenRandom(_byteCache, BYTE_CACHE_SIZE);
+				if (status == BCrypt.NTSTATUS.STATUS_SUCCESS)
+				{
+					_byteCachePosition = count;
+					new Span<byte>(_byteCache, 0, count).CopyTo(buffer);
+					return;
+				}
+				ThrowNewCryptographicException((int)status);
+			}// lock
+		}//NextBytesInternal_Span()
+#endif
 
 		/// <summary>
 		/// Gets one random signed 32bit integer in a thread safe manner.
@@ -370,6 +414,18 @@ namespace SecurityDriven.Inferno
 			s_rng.GetBytes(pbBuffer, obBuffer, cbBuffer);
 			return NTSTATUS.STATUS_SUCCESS;
 		}
+
+#if (NETCOREAPP2_1 || NETSTANDARD2_1)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		internal static NTSTATUS BCryptGenRandom_Span(Span<byte> pbBuffer)
+		{
+			if (s_isWindows)
+				return BCryptGenRandom(default, ref pbBuffer[0], pbBuffer.Length, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+
+			s_rng.GetBytes(pbBuffer);
+			return NTSTATUS.STATUS_SUCCESS;
+		}//BCryptGenRandom_Span()
+#endif
 
 		/* No longer used
 		internal static NTSTATUS BCryptGenRandom_PinnedBuffer(byte[] pbBuffer, int obBuffer, int cbBuffer)
