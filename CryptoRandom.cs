@@ -55,6 +55,7 @@ namespace SecurityDriven.Inferno
 		/// <returns>
 		/// A 64-bit signed integer greater than or equal to zero and less than <see cref="F:System.Int64.MaxValue"/>.
 		/// </returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public long NextLong()
 		{
 			// Mask away the sign bit so that we always return nonnegative integers
@@ -71,6 +72,7 @@ namespace SecurityDriven.Inferno
 		/// <exception cref="T:System.ArgumentOutOfRangeException">
 		///     <paramref name="maxValue"/> is less than zero.
 		/// </exception>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public long NextLong(long maxValue)
 		{
 			if (maxValue < 0)
@@ -90,6 +92,7 @@ namespace SecurityDriven.Inferno
 		/// <exception cref="T:System.ArgumentOutOfRangeException">
 		///     <paramref name="minValue"/> is greater than <paramref name="maxValue"/>.
 		/// </exception>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public long NextLong(long minValue, long maxValue)
 		{
 			if (minValue == maxValue) return minValue;
@@ -129,6 +132,7 @@ namespace SecurityDriven.Inferno
 		/// <returns>
 		/// A 32-bit signed integer greater than or equal to zero and less than <see cref="F:System.Int32.MaxValue"/>.
 		/// </returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override int Next()
 		{
 			// Mask away the sign bit so that we always return nonnegative integers
@@ -145,6 +149,7 @@ namespace SecurityDriven.Inferno
 		/// <exception cref="T:System.ArgumentOutOfRangeException">
 		///     <paramref name="maxValue"/> is less than zero.
 		/// </exception>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override int Next(int maxValue)
 		{
 			if (maxValue < 0)
@@ -164,6 +169,7 @@ namespace SecurityDriven.Inferno
 		/// <exception cref="T:System.ArgumentOutOfRangeException">
 		///     <paramref name="minValue"/> is greater than <paramref name="maxValue"/>.
 		/// </exception>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override int Next(int minValue, int maxValue)
 		{
 			if (minValue == maxValue) return minValue;
@@ -200,6 +206,7 @@ namespace SecurityDriven.Inferno
 		/// <returns>
 		/// A double-precision floating point number greater than or equal to 0.0, and less than 1.0.
 		/// </returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override double NextDouble()
 		{
 			const double max = 1L << 53; // https://en.wikipedia.org/wiki/Double-precision_floating-point_format
@@ -211,6 +218,7 @@ namespace SecurityDriven.Inferno
 		/// </summary>
 		/// <param name="count">Array length.</param>
 		/// <returns>Random byte array.</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public byte[] NextBytes(int count)
 		{
 			byte[] bytes = new byte[count];
@@ -229,6 +237,7 @@ namespace SecurityDriven.Inferno
 		/// <exception cref="T:System.ArgumentNullException">
 		///     <paramref name="buffer"/> is null.
 		/// </exception>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void NextBytes(byte[] buffer) => NextBytes(buffer, 0, buffer.Length);
 
 		/// <summary>
@@ -240,6 +249,7 @@ namespace SecurityDriven.Inferno
 		/// <exception cref="T:System.ArgumentNullException">
 		///     <paramref name="buffer"/> is null.
 		/// </exception>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void NextBytes(byte[] buffer, int offset, int count)
 		{
 			new ArraySegment<byte>(buffer, offset, count); // bounds-validation happens here
@@ -250,6 +260,7 @@ namespace SecurityDriven.Inferno
 #if (NETCOREAPP2_1 || NETSTANDARD2_1)
 		/// <summary>Fills the elements of a specified span of bytes with cryptographically strong random values.</summary>
 		/// <param name="buffer">The span to be filled.</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void NextBytes(Span<byte> buffer)
 		{
 			var count = buffer.Length;
