@@ -58,8 +58,13 @@ namespace SecurityDriven.Inferno
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public long NextLong()
 		{
-			// Mask away the sign bit so that we always return nonnegative integers
-			return GetRandomLong() & 0x7FFFFFFFFFFFFFFF;
+			long result;
+			do
+			{
+				result = GetRandomLong() & 0x7FFF_FFFF_FFFF_FFFF; // Mask away the sign bit so that we always return nonnegative integers
+
+			} while (result == long.MaxValue); // the range must be [0, long.MaxValue)
+			return result;
 		}//NextLong()
 
 		/// <summary>
@@ -135,8 +140,13 @@ namespace SecurityDriven.Inferno
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override int Next()
 		{
-			// Mask away the sign bit so that we always return nonnegative integers
-			return GetRandomInt() & 0x7FFFFFFF;
+			int result;
+			do
+			{
+				result = GetRandomInt() & 0x7FFF_FFFF; // Mask away the sign bit so that we always return nonnegative integers
+
+			} while (result == int.MaxValue); // the range must be [0, int.MaxValue)
+			return result;
 		}//Next()
 
 		/// <summary>
