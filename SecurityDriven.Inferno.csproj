@@ -19,8 +19,8 @@
 		<RepositoryUrl>https://github.com/sdrapkin/SecurityDriven.Inferno</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>https://securitydriven.net/favicon.ico</PackageIconUrl>
-		<PackageReleaseNotes>Bug fix. (Aes factory was throwing on Linux).
-Updated &amp; tested for .NET 5.</PackageReleaseNotes>
+		<PackageReleaseNotes>Bug fix. (CryptoRandom works on Linux; CryptoRandom.Next() and NextLong() enforce exclusive upper-bound).
+CryptoRandom.NextBytes(Span&lt;byte&gt; buffer) is supported on .NET Core.</PackageReleaseNotes>
 		<SignAssembly>true</SignAssembly>
 		<AssemblyOriginatorKeyFile>Inferno.snk</AssemblyOriginatorKeyFile>
 		<DelaySign>false</DelaySign>
