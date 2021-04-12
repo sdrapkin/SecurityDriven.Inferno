@@ -19,8 +19,9 @@
 		<RepositoryUrl>https://github.com/sdrapkin/SecurityDriven.Inferno</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>https://securitydriven.net/favicon.ico</PackageIconUrl>
-		<PackageReleaseNotes>Bug fix. (CryptoRandom works on Linux; CryptoRandom.Next() and NextLong() enforce exclusive upper-bound).
-CryptoRandom.NextBytes(Span&lt;byte&gt; buffer) is supported on .NET Core.</PackageReleaseNotes>
+		<PackageReleaseNotes>[feature]: CryptoRandom now works on non-Windows systems.
+[feature]: CryptoRandom.NextBytes(Span&lt;byte&gt;) is supported on .NET Core, .NET 5+.
+[bugfix]: CryptoRandom.Next() and NextLong() enforce *exclusive* upper-bound.</PackageReleaseNotes>
 		<SignAssembly>true</SignAssembly>
 		<AssemblyOriginatorKeyFile>Inferno.snk</AssemblyOriginatorKeyFile>
 		<DelaySign>false</DelaySign>
