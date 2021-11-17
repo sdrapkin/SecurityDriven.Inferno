@@ -267,7 +267,7 @@ namespace SecurityDriven.Inferno
 			NextBytesInternal(buffer, offset, count);
 		}//NextBytes()
 
-#if (NETCOREAPP2_1 || NETSTANDARD2_1)
+#if (NETCOREAPP3_1 || NETSTANDARD2_1)
 		/// <summary>Fills the elements of a specified span of bytes with cryptographically strong random values.</summary>
 		/// <param name="buffer">The span to be filled.</param>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -310,7 +310,7 @@ namespace SecurityDriven.Inferno
 			}// lock
 		}//NextBytesInternal()
 
-#if (NETCOREAPP2_1 || NETSTANDARD2_1)
+#if (NETCOREAPP3_1 || NETSTANDARD2_1)
 		void NextBytesInternal_Span(Span<byte> buffer, int count)
 		{
 			BCrypt.NTSTATUS status;
@@ -436,7 +436,7 @@ namespace SecurityDriven.Inferno
 			return NTSTATUS.STATUS_SUCCESS;
 		}
 
-#if (NETCOREAPP2_1 || NETSTANDARD2_1)
+#if (NETCOREAPP3_1 || NETSTANDARD2_1)
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		internal static NTSTATUS BCryptGenRandom_Span(Span<byte> pbBuffer)
 		{

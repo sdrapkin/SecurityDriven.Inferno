@@ -46,7 +46,7 @@ namespace SecurityDriven.Inferno.Extensions
 		/// </summary>
 		public static byte[] GetSharedDhmSecret(this CngKey privateDhmKey, CngKey publicDhmKey, byte[] contextAppend = null, byte[] contextPrepend = null)
 		{
-#if (NET462 || NETCOREAPP2_1)
+#if (NET462 || NETCOREAPP3_1)
 			using (var ecdh = new ECDiffieHellmanCng(privateDhmKey) { HashAlgorithm = CngAlgorithm.Sha384, SecretAppend = contextAppend, SecretPrepend = contextPrepend })
 				return ecdh.DeriveKeyMaterial(publicDhmKey);
 #elif NETSTANDARD2_0
