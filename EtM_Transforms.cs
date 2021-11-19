@@ -50,8 +50,7 @@ namespace SecurityDriven.Inferno
 		/// <summary>ctor</summary>
 		public EtM_EncryptTransform(byte[] key, ArraySegment<byte>? salt = null)
 		{
-			if (key == null) throw new ArgumentNullException(nameof(key), nameof(key) + " cannot be null.");
-			this.key = key;
+			this.key = key ?? throw new ArgumentNullException(nameof(key), nameof(key) + " cannot be null.");
 			this.salt = salt;
 			this.currentChunkNumber = EtM_Transform_Constants.INITIAL_CHUNK_NUMBER;
 		}

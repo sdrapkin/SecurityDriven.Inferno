@@ -99,7 +99,7 @@ namespace SecurityDriven.Inferno
 
 		public static byte[] Encrypt(byte[] masterKey, ArraySegment<byte> plaintext, ArraySegment<byte>? salt = null, uint counter = 1)
 		{
-			int fullBlockLength = plaintext.Count & (-Cipher.AesConstants.AES_BLOCK_SIZE);
+			//int fullBlockLength = plaintext.Count & (-Cipher.AesConstants.AES_BLOCK_SIZE);
 			int finalBlockLength = plaintext.Count % Cipher.AesConstants.AES_BLOCK_SIZE;
 			int paddingLength = Cipher.AesConstants.AES_BLOCK_SIZE - finalBlockLength;
 			int ciphertextLength = CONTEXT_BUFFER_LENGTH + plaintext.Count + paddingLength + MAC_LENGTH;
