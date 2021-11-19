@@ -139,7 +139,7 @@ namespace SecurityDriven.Inferno.Extensions
 				result[index--] = (byte)tmp; tmp >>= 8;
 				result[index--] = (byte)tmp; tmp >>= 8;
 				result[index--] = (byte)tmp; tmp >>= 8;
-				result[index--] = (byte)tmp; tmp >>= 8;
+				result[index--] = (byte)tmp;
 			}
 			return result;
 		}//FromBase32()
