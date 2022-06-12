@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netcoreapp3.1;net462;netstandard2.0</TargetFrameworks>
+		<TargetFrameworks>net5;net6;netcoreapp3.1;net462;netstandard2.0</TargetFrameworks>
 		<LangVersion>latest</LangVersion>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<RootNamespace>SecurityDriven.Inferno</RootNamespace>
@@ -26,6 +26,7 @@
 		<AssemblyOriginatorKeyFile>Inferno.snk</AssemblyOriginatorKeyFile>
 		<DelaySign>false</DelaySign>
 		<Nullable>warnings</Nullable>
+    <!--<NoWarn>$(NoWarn);CS8602;CS8604;CS8629;NU5048;CS8601;CS8625;SYSLIB0021</NoWarn>-->
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
