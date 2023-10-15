@@ -127,6 +127,7 @@ namespace SecurityDriven.Inferno
 		byte[] key;
 		uint currentChunkNumber;
 		ArraySegment<byte>? salt;
+		ArraySegment<byte>? saltWithPrepend;
 
 		public uint CurrentChunkNumber { get { return this.currentChunkNumber; } }
 
@@ -138,6 +139,14 @@ namespace SecurityDriven.Inferno
 			this.salt = salt;
 			this.currentChunkNumber = EtM_Transform_Constants.INITIAL_CHUNK_NUMBER;
 			this.IsAuthenticateOnly = authenticateOnly;
+		}
+
+		public void SetCurrentChunkNumber(uint chunk)
+		{
+			if (chunk > EtM_Transform_Constants.INITIAL_CHUNK_NUMBER && !saltWithPrepend.HasValue)
+				throw new Exception("First chunk must be read first.");
+
+			this.currentChunkNumber = chunk;
 		}
 
 		public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
@@ -154,6 +163,8 @@ namespace SecurityDriven.Inferno
 				var authenticateOnly = this.IsAuthenticateOnly;
 				for (; i < fullBlockSize; i += EtM_Transform_Constants.OUTPUT_BLOCK_SIZE, j += EtM_Transform_Constants.INPUT_BLOCK_SIZE)
 				{
+					var isFirstChunk = this.currentChunkNumber == EtM_Transform_Constants.INITIAL_CHUNK_NUMBER;
+
 					var outputSegment = new ArraySegment<byte>?(new ArraySegment<byte>(outputBuffer, outputOffset + j, EtM_Transform_Constants.INPUT_BLOCK_SIZE));
 					var cipherText = new ArraySegment<byte>(inputBuffer, inputOffset + i, EtM_Transform_Constants.OUTPUT_BLOCK_SIZE);
 
@@ -162,7 +173,7 @@ namespace SecurityDriven.Inferno
 						if (!EtM_CTR.Authenticate(
 							masterKey: this.key,
 							ciphertext: cipherText,
-							salt: this.salt,
+							salt: isFirstChunk ? this.salt : this.saltWithPrepend,
 							counter: this.currentChunkNumber))
 							outputSegment = null;
 					}
@@ -172,8 +183,9 @@ namespace SecurityDriven.Inferno
 							masterKey: this.key,
 							ciphertext: cipherText,
 							outputSegment: ref outputSegment,
-							salt: this.salt,
+							salt: isFirstChunk ? this.salt : this.saltWithPrepend,
 							counter: this.currentChunkNumber);
+
 					}
 
 					if (outputSegment == null)
@@ -182,9 +194,11 @@ namespace SecurityDriven.Inferno
 						throw new CryptographicException("Decryption failed for block " + this.currentChunkNumber.ToString() + ".");
 					}
 
-					if (this.currentChunkNumber == EtM_Transform_Constants.INITIAL_CHUNK_NUMBER)
+					if (isFirstChunk && !saltWithPrepend.HasValue)
 					{
-						EtM_EncryptTransform.PrependSaltWith1stBlockContext(ref this.salt, inputBuffer, inputOffset);
+						if (salt.HasValue)
+							saltWithPrepend = new ArraySegment<byte>(salt.Value.Array);
+						EtM_EncryptTransform.PrependSaltWith1stBlockContext(ref this.saltWithPrepend, inputBuffer, inputOffset);
 					}
 
 					checked { ++this.currentChunkNumber; }
@@ -204,6 +218,7 @@ namespace SecurityDriven.Inferno
 
 			byte[] outputBuffer = null;
 			var cipherText = new ArraySegment<byte>(inputBuffer, inputOffset, inputCount);
+			var isFirstChunk = this.currentChunkNumber == EtM_Transform_Constants.INITIAL_CHUNK_NUMBER;
 
 			if (this.IsAuthenticateOnly)
 			{
@@ -219,10 +234,10 @@ namespace SecurityDriven.Inferno
 				outputBuffer = EtM_CTR.Decrypt(
 					masterKey: this.key,
 					ciphertext: cipherText,
-					salt: this.salt,
+					salt: isFirstChunk ? this.salt : this.saltWithPrepend,
 					counter: this.currentChunkNumber);
 			}
-			this.Dispose();
+
 			if (outputBuffer == null)
 				throw new CryptographicException("Decryption failed for block " + this.currentChunkNumber.ToString() + ".");
 
