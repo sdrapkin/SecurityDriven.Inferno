@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Security.Cryptography;
-using System.Linq;
 
 namespace SecurityDriven.Inferno.Extensions
 {
+#if NET5_0_OR_GREATER
+	[System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
 	public static class CngKeyExtensions
 	{
 		static readonly CngKeyCreationParameters cngKeyCreationParameters = new CngKeyCreationParameters { ExportPolicy = CngExportPolicies.AllowPlaintextExport };
@@ -46,13 +48,11 @@ namespace SecurityDriven.Inferno.Extensions
 		/// </summary>
 		public static byte[] GetSharedDhmSecret(this CngKey privateDhmKey, CngKey publicDhmKey, byte[] contextAppend = null, byte[] contextPrepend = null)
 		{
-#if (NET462 || NETCOREAPP3_1)
-			using (var ecdh = new ECDiffieHellmanCng(privateDhmKey) { HashAlgorithm = CngAlgorithm.Sha384, SecretAppend = contextAppend, SecretPrepend = contextPrepend })
-				return ecdh.DeriveKeyMaterial(publicDhmKey);
-#elif NETSTANDARD2_0
+#if NETSTANDARD2_0
 			throw new PlatformNotSupportedException($"ECDiffieHellman is not supported on .NET Standard 2.0. Please reference \"{typeof(CngKeyExtensions).Assembly.GetName().Name}\" from .NET Framework or .NET Core for ECDiffieHellman support.");
 #else
-#error Unknown target
+			using (var ecdh = new ECDiffieHellmanCng(privateDhmKey) { HashAlgorithm = CngAlgorithm.Sha384, SecretAppend = contextAppend, SecretPrepend = contextPrepend })
+				return ecdh.DeriveKeyMaterial(publicDhmKey);
 #endif
 		}// GetSharedDhmSecret()
 
