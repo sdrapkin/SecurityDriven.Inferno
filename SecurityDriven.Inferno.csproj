@@ -1,15 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netcoreapp3.1;net462;netstandard2.0</TargetFrameworks>
+		<TargetFrameworks>net8.0;netcoreapp3.1;net462;netstandard2.0</TargetFrameworks>
 		<LangVersion>latest</LangVersion>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<RootNamespace>SecurityDriven.Inferno</RootNamespace>
-		<Version>1.6.5.0</Version>
+		<Version>1.6.6.0</Version>
 		<Company>https://SecurityDriven.NET/inferno</Company>
 		<PackageId>Inferno</PackageId>
 		<Authors>Stan Drapkin</Authors>
-		<Copyright>Copyright (c) 2021 Stan Drapkin</Copyright>
+		<Copyright>Copyright (c) 2024 Stan Drapkin</Copyright>
 		<Description>Modern, free, open-source, professionally audited .NET crypto library.</Description>
 		<PackageProjectUrl>https://securitydriven.net/inferno/</PackageProjectUrl>
 		<PackageTags>crypto cryptography encryption security</PackageTags>
@@ -19,9 +19,8 @@
 		<RepositoryUrl>https://github.com/sdrapkin/SecurityDriven.Inferno</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>https://securitydriven.net/favicon.ico</PackageIconUrl>
-		<PackageReleaseNotes>[feature]: CryptoRandom now works on non-Windows systems.
-[feature]: CryptoRandom.NextBytes(Span&lt;byte&gt;) is supported on .NET Core, .NET 5+.
-[bugfix]: CryptoRandom.Next() and NextLong() enforce *exclusive* upper-bound.</PackageReleaseNotes>
+		<PackageReleaseNotes>.NET 8.0 LTS added as another target.
+Dependencies updated.</PackageReleaseNotes>
 		<SignAssembly>true</SignAssembly>
 		<AssemblyOriginatorKeyFile>Inferno.snk</AssemblyOriginatorKeyFile>
 		<DelaySign>false</DelaySign>
@@ -41,11 +40,15 @@
 		<Compile Remove="Mac\HMAC3.cs" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
-		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
-		<PackageReference Include="System.Security.Cryptography.Cng" Version="5.0.0" Condition="'$(TargetFramework)' != 'net462'" />
+	<ItemGroup Condition="$(TargetFramework) == 'netstandard2.0' OR $(TargetFramework) == 'net462'">
+		<PackageReference Include="System.Numerics.Vectors" Version="4.6.0" />
+		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.0" />
 		<PackageReference Include="System.ValueTuple" Version="4.5.0" />
 	</ItemGroup>
 
+	<ItemGroup Condition="$(TargetFramework) == 'netstandard2.0' OR $(TargetFramework) == 'netcoreapp3.1'">
+		<PackageReference Include="System.Security.Cryptography.Cng" Version="5.0.0" />
+		<PackageReference Include="System.Formats.Asn1" Version="9.0.0" />
+	</ItemGroup>	
+	
 </Project>
