@@ -48,6 +48,9 @@ namespace SecurityDriven.Inferno
 			}
 		}// SanityCheck()
 
+		/// <summary>Returns a random number between 0.0 and 1.0.</summary>
+		protected override double Sample() => NextDouble();
+
 		#region NextLong()
 		/// <summary>
 		/// Returns a nonnegative random number.
