@@ -36,8 +36,6 @@ namespace SecurityDriven.Inferno.Extensions
 			////////////////////////////////////////////////////////
 			// Step 1: Do a Base64 encoding
 			base64Str = Convert.ToBase64String(inputArray, inputOffset, inputLength);
-			if (base64Str == null)
-				return null;
 
 			////////////////////////////////////////////////////////
 			// Step 2: Find how many padding chars are present in the end
@@ -108,7 +106,7 @@ namespace SecurityDriven.Inferno.Extensions
 
 
 			////////////////////////////////////////////////////////
-			// Step 3: Copy in the chars. Transform the "-" to "+", and "*" to "/"
+			// Step 3: Copy in the chars. Transform the "-" to "+", and "_" to "/"
 			for (int iter = 0; iter < len - 1; iter++)
 			{
 				char c = input[iter];
