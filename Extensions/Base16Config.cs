@@ -9,7 +9,7 @@ namespace SecurityDriven.Inferno.Extensions
 
 		internal char[] Base16table;
 		internal byte[] ReverseMap;
-		int? hashcode;
+		int hashcode;
 
 		public Base16Config(char[] alphabet = null)
 		{
@@ -17,30 +17,26 @@ namespace SecurityDriven.Inferno.Extensions
 			{
 				this.Base16table = HexUppercase.Base16table;
 				this.ReverseMap = HexUppercase.ReverseMap;
+				this.hashcode = HexUppercase.GetHashCode();
 				return;
 			}
 
 			if (alphabet.Length != BASE)
 				throw new ArgumentOutOfRangeException(nameof(alphabet), $"'{nameof(alphabet)}' array must have exactly {BASE.ToString()} characters.");
 
-			this.Base16table = alphabet;
+			this.Base16table = (char[])alphabet.Clone();
 
-			char ch;
-			this.ReverseMap = new byte[byte.MaxValue];
+			this.ReverseMap = new byte[byte.MaxValue + 1];
 			for (byte i = 0; i < Base16table.Length; ++i)
 			{
-				ch = Base16table[i];
+				char ch = Base16table[i];
 				this.ReverseMap[char.ToUpperInvariant(ch)] = i;
 				this.ReverseMap[char.ToLowerInvariant(ch)] = i;
 			}
+			this.hashcode = new string(this.Base16table).GetHashCode();
 		}//ctor
 
-		public override int GetHashCode()
-		{
-			if (this.hashcode == null)
-				this.hashcode = new string(this.Base16table).GetHashCode();
-			return this.hashcode.GetValueOrDefault();
-		}
+		public override int GetHashCode() => hashcode;
 
 		public override bool Equals(object obj)
 		{

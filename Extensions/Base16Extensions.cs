@@ -51,6 +51,9 @@ namespace SecurityDriven.Inferno.Extensions
 		/// </summary>
 		public static byte[] FromBase16(this string str16, Base16Config config = null)
 		{
+			if ((str16.Length & 1) != 0)
+				throw new ArgumentException("Base16 string must have an even length.", nameof(str16));
+			
 			if (config == null)
 				config = Base16Config.HexUppercase;
 
