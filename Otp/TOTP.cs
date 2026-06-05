@@ -53,7 +53,7 @@ namespace SecurityDriven.Inferno.Otp
 		static long GetCurrentTimeDeltaInTicks(Func<DateTime> timeFactory)
 		{
 			var time = timeFactory();
-			if (time.Kind == DateTimeKind.Local) throw new ArgumentException("DateTime cannot of 'Local' kind.", nameof(timeFactory));
+			if (time.Kind == DateTimeKind.Local) throw new ArgumentException("DateTime cannot be 'Local' kind.", nameof(timeFactory));
 			if (time < _unixEpoch) throw new ArgumentOutOfRangeException(nameof(timeFactory), $"DateTime cannot be less than {_unixEpoch.ToString()}.");
 			long deltaTicks = (time - _unixEpoch).Ticks;
 			return deltaTicks;
