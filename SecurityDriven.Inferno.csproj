@@ -1,15 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0;netcoreapp3.1;net462;netstandard2.0</TargetFrameworks>
+		<TargetFrameworks>net10.0;net8.0;netcoreapp3.1;net462;netstandard2.0</TargetFrameworks>
 		<LangVersion>latest</LangVersion>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<RootNamespace>SecurityDriven.Inferno</RootNamespace>
-		<Version>1.6.6.0</Version>
+		<Version>1.6.7.0</Version>
 		<Company>https://SecurityDriven.NET/inferno</Company>
 		<PackageId>Inferno</PackageId>
 		<Authors>Stan Drapkin</Authors>
-		<Copyright>Copyright (c) 2024 Stan Drapkin</Copyright>
+		<Copyright>Copyright (c) 2026 Stan Drapkin</Copyright>
 		<Description>Modern, free, open-source, professionally audited .NET crypto library.</Description>
 		<PackageProjectUrl>https://securitydriven.net/inferno/</PackageProjectUrl>
 		<PackageTags>crypto cryptography encryption security</PackageTags>
@@ -19,7 +19,7 @@
 		<RepositoryUrl>https://github.com/sdrapkin/SecurityDriven.Inferno</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>https://securitydriven.net/favicon.ico</PackageIconUrl>
-		<PackageReleaseNotes>.NET 8.0 LTS added as another target.
+		<PackageReleaseNotes>.NET 10.0 LTS added as another target.
 Dependencies updated.</PackageReleaseNotes>
 		<SignAssembly>true</SignAssembly>
 		<AssemblyOriginatorKeyFile>Inferno.snk</AssemblyOriginatorKeyFile>
@@ -41,14 +41,19 @@ Dependencies updated.</PackageReleaseNotes>
 	</ItemGroup>
 
 	<ItemGroup Condition="$(TargetFramework) == 'netstandard2.0' OR $(TargetFramework) == 'net462'">
-		<PackageReference Include="System.Numerics.Vectors" Version="4.6.0" />
-		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.0" />
-		<PackageReference Include="System.ValueTuple" Version="4.5.0" />
+		<PackageReference Include="System.Numerics.Vectors" Version="4.6.1" />
+		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+		<PackageReference Include="System.ValueTuple" Version="4.6.2" />
 	</ItemGroup>
 
 	<ItemGroup Condition="$(TargetFramework) == 'netstandard2.0' OR $(TargetFramework) == 'netcoreapp3.1'">
 		<PackageReference Include="System.Security.Cryptography.Cng" Version="5.0.0" />
-		<PackageReference Include="System.Formats.Asn1" Version="9.0.0" />
+		<PackageReference Include="System.Formats.Asn1" Version="10.0.8" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
+	  <PackageReference Include="System.Buffers" Version="4.6.1" />
 	</ItemGroup>	
 	
 </Project>
