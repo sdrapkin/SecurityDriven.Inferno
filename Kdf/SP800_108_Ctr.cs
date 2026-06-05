@@ -42,7 +42,7 @@ namespace SecurityDriven.Inferno.Kdf
 				var contextSegmentOffset = contextSegment.Offset;
 
 				if (contextLength > Extensions.ByteArrayExtensions.SHORT_BYTECOPY_THRESHOLD)
-					Utils.BlockCopy(contextSegment.Array, contextSegment.Offset, buffer, COUNTER_LENGTH + labelLength + 1, contextLength);
+					Utils.BlockCopy(contextSegmentArray, contextSegmentOffset, buffer, COUNTER_LENGTH + labelLength + 1, contextLength);
 				else
 					for (int i = 0; i < contextLength; ++i) buffer[COUNTER_LENGTH + labelLength + 1 + i] = contextSegmentArray[contextSegmentOffset + i];
 			}
