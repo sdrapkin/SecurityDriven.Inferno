@@ -60,6 +60,9 @@ namespace SecurityDriven.Inferno.Kdf
 
 		public override byte[] GetBytes(int countBytes)
 		{
+			if (countBytes < 0 || (long)countBytes > (byte.MaxValue - counter) * (long)hashLength + k_unused)
+				throw new ArgumentOutOfRangeException(nameof(countBytes));
+
 			var okm = new byte[countBytes];
 			if (k_unused > 0)
 			{
@@ -70,7 +73,7 @@ namespace SecurityDriven.Inferno.Kdf
 			}
 			if (countBytes == 0) return okm;
 
-			int n = countBytes / hashLength + 1;
+			int n = 1 + (countBytes - 1) / hashLength; // ceiling division: n = ceil(countBytes / hashLength)
 			int contextLength = context != null ? context.Length : 0;
 			byte[] hmac_msg = new byte[hashLength + contextLength + 1];
 

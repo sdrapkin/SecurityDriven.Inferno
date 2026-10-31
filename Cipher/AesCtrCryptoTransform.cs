@@ -53,6 +53,13 @@ namespace SecurityDriven.Inferno.Cipher
 		#region public
 		public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
 		{
+			// Validate input and output ranges before any unsafe access.
+			new ArraySegment<byte>(inputBuffer, inputOffset, inputCount);
+			new ArraySegment<byte>(outputBuffer, outputOffset, inputCount);
+
+			if (ReferenceEquals(inputBuffer, outputBuffer) && inputCount > 0 && inputOffset < outputOffset + inputCount && outputOffset < inputOffset + inputCount)
+				throw new ArgumentException("Overlapping input and output buffers are not supported.");
+
 			if (inputCount == 0) return 0;
 
 			int i, j, remainingInputCount = inputCount;

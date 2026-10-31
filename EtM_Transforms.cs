@@ -236,4 +236,64 @@ namespace SecurityDriven.Inferno
 			this.key = null;
 		}// Dispose()
 	}// class EtM_DecryptTransform
+
+	public static class EtM_AuthenticatedStream
+	{
+		/// <summary>Decrypts the entire ciphertext in one go. Throws CryptographicException if decryption fails.</summary>
+		public static byte[] DecryptAll(byte[] key, ArraySegment<byte> ciphertext, ArraySegment<byte>? salt = null)
+		{
+			const int OVERHEAD = EtM_Transform_Constants.ETM_CTR_OVERHEAD;
+			const int CIPHER_BLOCK = EtM_Transform_Constants.OUTPUT_BLOCK_SIZE;
+			const int PLAIN_BLOCK = EtM_Transform_Constants.INPUT_BLOCK_SIZE;
+
+			if (ciphertext.Count < OVERHEAD)
+				throw new CryptographicException("Invalid ciphertext length.");
+
+			int fullChunks = (ciphertext.Count - OVERHEAD) / CIPHER_BLOCK;
+			int fullCipherLength = fullChunks * CIPHER_BLOCK;
+			int finalCipherLength = ciphertext.Count - fullCipherLength;
+
+			if (finalCipherLength < OVERHEAD || finalCipherLength >= CIPHER_BLOCK)
+				throw new CryptographicException("Invalid final chunk length.");
+
+			int fullPlainLength = checked(fullChunks * PLAIN_BLOCK);
+			int finalPlainLength = finalCipherLength - OVERHEAD;
+
+			byte[] plaintext = new byte[checked(fullPlainLength + finalPlainLength)];
+
+			try
+			{
+				using (var decryptor = new EtM_DecryptTransform(key, salt))
+				{
+					if (fullCipherLength > 0)
+					{
+						int written = decryptor.TransformBlock(ciphertext.Array, ciphertext.Offset, fullCipherLength, plaintext, 0);
+						if (written != fullPlainLength)
+							throw new CryptographicException("Unexpected plaintext length.");
+					}
+
+					byte[] final = decryptor.TransformFinalBlock(ciphertext.Array, ciphertext.Offset + fullCipherLength, finalCipherLength);
+
+					try
+					{
+						if (!decryptor.IsComplete || final.Length != finalPlainLength)
+							throw new CryptographicException("Incomplete ciphertext.");
+
+						Buffer.BlockCopy(final, 0, plaintext, fullPlainLength, final.Length);
+					}
+					finally
+					{
+						Array.Clear(final, 0, final.Length);
+					}
+				}
+
+				return plaintext;
+			}
+			catch
+			{
+				Array.Clear(plaintext, 0, plaintext.Length);
+				throw;
+			}
+		}// DecryptAll()
+	}// class EtM_AuthenticatedStream
 }//ns

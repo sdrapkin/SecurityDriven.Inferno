@@ -5,7 +5,7 @@
 		<LangVersion>latest</LangVersion>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<RootNamespace>SecurityDriven.Inferno</RootNamespace>
-		<Version>1.6.7.0</Version>
+		<Version>1.6.8.0</Version>
 		<Company>https://SecurityDriven.NET/inferno</Company>
 		<PackageId>Inferno</PackageId>
 		<Authors>Stan Drapkin</Authors>
@@ -20,7 +20,7 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>https://securitydriven.net/favicon.ico</PackageIconUrl>
 		<PackageReleaseNotes>.NET 10.0 LTS added as another target.
-Dependencies updated.</PackageReleaseNotes>
+Dependencies updated. Hardened validations of lengths, ranges, overlaps, capacities, and output segments.</PackageReleaseNotes>
 		<SignAssembly>true</SignAssembly>
 		<AssemblyOriginatorKeyFile>Inferno.snk</AssemblyOriginatorKeyFile>
 		<DelaySign>false</DelaySign>
@@ -48,7 +48,7 @@ Dependencies updated.</PackageReleaseNotes>
 
 	<ItemGroup Condition="$(TargetFramework) == 'netstandard2.0' OR $(TargetFramework) == 'netcoreapp3.1'">
 		<PackageReference Include="System.Security.Cryptography.Cng" Version="5.0.0" />
-		<PackageReference Include="System.Formats.Asn1" Version="10.0.8" />
+		<PackageReference Include="System.Formats.Asn1" Version="10.0.14" />
 	</ItemGroup>
 
 	<ItemGroup>

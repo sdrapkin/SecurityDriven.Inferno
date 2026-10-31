@@ -25,28 +25,66 @@ namespace SecurityDriven.Inferno.Mac
 		static readonly Func<HashAlgorithm, byte[]> _HashValue_Getter =
 			Utils.CreateGetter<HashAlgorithm, byte[]>(typeof(HashAlgorithm).GetField("HashValue", BindingFlags.Instance | BindingFlags.NonPublic));
 
+
 		#region ctors
 		public HMAC2(Func<HashAlgorithm> hashFactory)
-		{
-			hashAlgorithm = hashFactory();
-			base.HashSizeValue = hashAlgorithm.HashSize;
-#if NET462
-			if (hashAlgorithm is SHA384Cng || hashAlgorithm is SHA512Cng || hashAlgorithm is SHA384 || hashAlgorithm is SHA512)
-#else
-			if (hashAlgorithm is SHA384 || hashAlgorithm is SHA512)
-#endif
-			{
-				base.BlockSizeValue = blockSizeValue;
-			}
-			else blockSizeValue = 64;
+			: this(hashFactory, (int?)null) { }
 
-			// [block-sized raw key value] || [ipad xor'ed into block-sized raw key value] || [opad xor'ed into block-sized raw key value]
-			base.KeyValue = new byte[blockSizeValue * 3];
-		}// ctor
+		public HMAC2(Func<HashAlgorithm> hashFactory, int blockSize)
+			: this(hashFactory, (int?)blockSize) { }
+
+		HMAC2(Func<HashAlgorithm> hashFactory, int? blockSize)
+		{
+			if (hashFactory == null)
+				throw new ArgumentNullException(nameof(hashFactory));
+
+			var hash = hashFactory() ?? throw new ArgumentException("Hash factory returned null.", nameof(hashFactory));
+
+			try
+			{
+				int knownBlockSize =
+					hash is SHA384 || hash is SHA512 ? 128 :
+					hash is SHA1 || hash is SHA256 ? 64 : 0;
+
+				if (blockSize.HasValue && blockSize.Value <= 0)
+					throw new ArgumentOutOfRangeException(nameof(blockSize));
+
+				if (knownBlockSize != 0 && blockSize.HasValue && blockSize.Value != knownBlockSize)
+					throw new ArgumentException("Incorrect block size for the specified hash algorithm.", nameof(blockSize));
+
+				int size = blockSize ?? knownBlockSize;
+
+				if (size == 0)
+					throw new NotSupportedException("Specify the hash algorithm's block size explicitly.");
+
+				if (hash.HashSize <= 0 || size < (hash.HashSize + 7L) / 8)
+					throw new ArgumentException("Invalid hash size or block size.");
+
+				hashAlgorithm = hash;
+				blockSizeValue = size;
+				base.HashSizeValue = hash.HashSize;
+				base.BlockSizeValue = size;
+
+				// [raw key] || [ipad XOR key] || [opad XOR key]
+				base.KeyValue = new byte[checked(size * 3)];
+			}
+			catch
+			{
+				hash.Dispose();
+				hashAlgorithm = null;
+				throw;
+			}
+		}// HMAC2() ctor
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HMAC2(Func<HashAlgorithm> hashFactory, byte[] key) : this(hashFactory) { this.Key = key; }
+		public HMAC2(Func<HashAlgorithm> hashFactory, byte[] key)
+			: this(hashFactory) { this.Key = key; }
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public HMAC2(Func<HashAlgorithm> hashFactory, byte[] key, int blockSize)
+			: this(hashFactory, blockSize) { this.Key = key; }
 		#endregion
+
 
 		#region overrides
 		public override byte[] Key

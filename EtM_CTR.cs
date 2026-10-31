@@ -14,7 +14,9 @@ namespace SecurityDriven.Inferno
 		const int MAC_KEY_LENGTH = MAC_LENGTH;
 		const int ENC_KEY_LENGTH = 256 / 8;
 
-		static readonly int HMAC_LENGTH = _hmacFactory().HashSize / 8;
+		static readonly int HMAC_LENGTH = GetHmacLength();
+		static int GetHmacLength() { using var hmac = _hmacFactory(); return hmac.HashSize / 8; }
+
 		internal const int CONTEXT_TWEAK_LENGTH = ENC_KEY_LENGTH;
 		internal const int NONCE_LENGTH = Cipher.AesConstants.AES_BLOCK_SIZE / 2;
 		const int CONTEXT_BUFFER_LENGTH = CONTEXT_TWEAK_LENGTH + NONCE_LENGTH;
@@ -29,8 +31,11 @@ namespace SecurityDriven.Inferno
 
 		public static void Encrypt(byte[] masterKey, ArraySegment<byte> plaintext, byte[] output, int outputOffset, ArraySegment<byte>? salt = null, uint counter = 1)
 		{
-			int ciphertextLength = CONTEXT_BUFFER_LENGTH + MAC_LENGTH + plaintext.Count;
-			if (output.Length - outputOffset < ciphertextLength) throw new ArgumentOutOfRangeException(nameof(output), $"'{nameof(output)}' array segment is not big enough for the ciphertext");
+			int ciphertextLength = checked(CONTEXT_BUFFER_LENGTH + MAC_LENGTH + plaintext.Count);
+			new ArraySegment<byte>(output, outputOffset, ciphertextLength);
+
+			if (ReferenceEquals(plaintext.Array, output) && plaintext.Count > 0 && plaintext.Offset < outputOffset + ciphertextLength && outputOffset < plaintext.Offset + plaintext.Count)
+				throw new ArgumentException("Plaintext and ciphertext output must not overlap.");
 
 			var counterBuffer = new byte[Cipher.AesConstants.AES_BLOCK_SIZE];
 			var contextBuffer = new byte[CONTEXT_BUFFER_LENGTH];
@@ -77,7 +82,7 @@ namespace SecurityDriven.Inferno
 
 		public static byte[] Encrypt(byte[] masterKey, ArraySegment<byte> plaintext, ArraySegment<byte>? salt = null, uint counter = 1)
 		{
-			byte[] buffer = new byte[CONTEXT_BUFFER_LENGTH + plaintext.Count + MAC_LENGTH];
+			byte[] buffer = new byte[checked(CONTEXT_BUFFER_LENGTH + plaintext.Count + MAC_LENGTH)];
 			EtM_CTR.Encrypt(masterKey: masterKey, plaintext: plaintext, output: buffer, outputOffset: 0, salt: salt, counter: counter);
 			return buffer;
 		}// Encrypt()
@@ -108,10 +113,18 @@ namespace SecurityDriven.Inferno
 					hmac.TransformBlock(ciphertextArray, ciphertextOffset + CONTEXT_TWEAK_LENGTH, NONCE_LENGTH + cipherLength, null, 0);
 					hmac.TransformFinalBlock(ciphertextArray, 0, 0);
 					var fullmacActual = hmac.HashInner;
-					if (!Utils.ConstantTimeEqual(fullmacActual, 0, ciphertextArray, ciphertextOffset + ciphertext.Count - MAC_LENGTH, MAC_LENGTH)) { outputSegment = null; return; };
+					if (!Utils.ConstantTimeEqual(fullmacActual, 0, ciphertextArray, ciphertextOffset + ciphertext.Count - MAC_LENGTH, MAC_LENGTH))
+					{ outputSegment = null; return; }
 				}// using hmac
 
 				if (outputSegment == null) outputSegment = (new byte[cipherLength]).AsNullableArraySegment();
+				var destination = outputSegment.Value;
+
+				if (destination.Array == null || destination.Count < cipherLength)
+					throw new ArgumentException("Output segment is too small.", nameof(outputSegment));
+
+				if (ReferenceEquals(ciphertextArray, destination.Array) && cipherLength > 0 && ciphertextOffset < destination.Offset + cipherLength && destination.Offset < ciphertextOffset + ciphertext.Count)
+					throw new ArgumentException("Ciphertext and plaintext output must not overlap.", nameof(outputSegment));
 
 				//Utils.BlockCopy(ciphertext.Array, ciphertext.Offset + CONTEXT_TWEAK_LENGTH, counterBuffer, 0, NONCE_LENGTH);
 				for (int i = 0; i < NONCE_LENGTH; ++i) counterBuffer[i] = ciphertextArray[ciphertextOffset + CONTEXT_TWEAK_LENGTH + i];
@@ -121,8 +134,10 @@ namespace SecurityDriven.Inferno
 
 				using (var ctrTransform = new Cipher.AesCtrCryptoTransform(key: encKey, counterBufferSegment: counterBuffer.AsArraySegment(), aesFactory: _aesFactory))
 				{
-					ctrTransform.TransformBlock(inputBuffer: ciphertextArray, inputOffset: ciphertextOffset + CONTEXT_BUFFER_LENGTH, inputCount: cipherLength, outputBuffer: outputSegment.GetValueOrDefault().Array, outputOffset: outputSegment.GetValueOrDefault().Offset);
+					ctrTransform.TransformBlock(inputBuffer: ciphertextArray, inputOffset: ciphertextOffset + CONTEXT_BUFFER_LENGTH, inputCount: cipherLength, outputBuffer: destination.Array, outputOffset: destination.Offset);
 				}// using aesDecryptor
+
+				outputSegment = new ArraySegment<byte>(destination.Array, destination.Offset, cipherLength);
 			}
 			finally { EtM_CTR.ClearKeyMaterial(encKey, macKey, sessionKey); }
 		}// Decrypt()

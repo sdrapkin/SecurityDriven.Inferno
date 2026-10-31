@@ -30,7 +30,7 @@ namespace SecurityDriven.Inferno
 		{
 			int finalBlockLength = plaintext.Count - (plaintext.Count & (-Cipher.AesConstants.AES_BLOCK_SIZE));
 			int paddingLength = AES_IV_LENGTH - finalBlockLength;
-			return CONTEXT_BUFFER_LENGTH + plaintext.Count + paddingLength + MAC_LENGTH;
+			return checked(CONTEXT_BUFFER_LENGTH + plaintext.Count + paddingLength + MAC_LENGTH);
 		}
 
 		static void ValidateAes(Aes aes) // detect & fix any Mode/Padding deviation
@@ -53,8 +53,11 @@ namespace SecurityDriven.Inferno
 			int fullBlockLength = plaintext.Count & (-Cipher.AesConstants.AES_BLOCK_SIZE);
 			int finalBlockLength = plaintext.Count % Cipher.AesConstants.AES_BLOCK_SIZE;
 			int paddingLength = Cipher.AesConstants.AES_BLOCK_SIZE - finalBlockLength;
-			int ciphertextLength = CONTEXT_BUFFER_LENGTH + plaintext.Count + paddingLength + MAC_LENGTH;
-			if (output.Length - outputOffset < ciphertextLength) throw new ArgumentOutOfRangeException(nameof(output), $"'{nameof(output)}' array segment is not big enough for the ciphertext");
+			int ciphertextLength = checked(CONTEXT_BUFFER_LENGTH + plaintext.Count + paddingLength + MAC_LENGTH);
+			new ArraySegment<byte>(output, outputOffset, ciphertextLength);
+
+			if (ReferenceEquals(plaintext.Array, output) && plaintext.Count > 0 && plaintext.Offset < outputOffset + ciphertextLength && outputOffset < plaintext.Offset + plaintext.Count)
+				throw new ArgumentException("Plaintext and ciphertext output must not overlap.");
 
 			try
 			{
@@ -102,7 +105,7 @@ namespace SecurityDriven.Inferno
 			//int fullBlockLength = plaintext.Count & (-Cipher.AesConstants.AES_BLOCK_SIZE);
 			int finalBlockLength = plaintext.Count % Cipher.AesConstants.AES_BLOCK_SIZE;
 			int paddingLength = Cipher.AesConstants.AES_BLOCK_SIZE - finalBlockLength;
-			int ciphertextLength = CONTEXT_BUFFER_LENGTH + plaintext.Count + paddingLength + MAC_LENGTH;
+			int ciphertextLength = checked(CONTEXT_BUFFER_LENGTH + plaintext.Count + paddingLength + MAC_LENGTH);
 			byte[] buffer = new byte[ciphertextLength];
 			EtM_CBC.Encrypt(masterKey: masterKey, plaintext: plaintext, output: buffer, outputOffset: 0, salt: salt, counter: counter);
 			return buffer;
@@ -131,8 +134,17 @@ namespace SecurityDriven.Inferno
 					hmac.TransformBlock(ciphertext.Array, ciphertext.Offset + CONTEXT_TWEAK_LENGTH, AES_IV_LENGTH + cipherLength, null, 0);
 					hmac.TransformFinalBlock(ciphertext.Array, 0, 0);
 					var fullmacActual = hmac.HashInner;
-					if (!Utils.ConstantTimeEqual(fullmacActual, 0, ciphertext.Array, ciphertext.Offset + ciphertext.Count - MAC_LENGTH, MAC_LENGTH)) { outputSegment = null; return; };
+					if (!Utils.ConstantTimeEqual(fullmacActual, 0, ciphertext.Array, ciphertext.Offset + ciphertext.Count - MAC_LENGTH, MAC_LENGTH)) { outputSegment = null; return; }
+					;
 				}// using hmac
+
+				if (outputSegment == null)
+					outputSegment = new ArraySegment<byte>(new byte[cipherLength]);
+
+				var destination = outputSegment.Value;
+
+				if (destination.Array == null || destination.Count < fullBlockLength)
+					throw new ArgumentException("Output segment is too small.", nameof(outputSegment));
 
 				Utils.BlockCopy(ciphertext.Array, ciphertext.Offset + CONTEXT_TWEAK_LENGTH, iv, 0, AES_IV_LENGTH);
 				Utils.BlockCopy(sessionKey, MAC_KEY_LENGTH, encKey, 0, ENC_KEY_LENGTH);
@@ -144,11 +156,16 @@ namespace SecurityDriven.Inferno
 					{
 						int fullBlockTransformed = 0;
 						if (fullBlockLength > 0)
-							fullBlockTransformed = aesDecryptor.TransformBlock(inputBuffer: ciphertext.Array, inputOffset: ciphertext.Offset + CONTEXT_BUFFER_LENGTH, inputCount: fullBlockLength, outputBuffer: outputSegment.Value.Array, outputOffset: outputSegment.Value.Offset);
+							fullBlockTransformed = aesDecryptor.TransformBlock(inputBuffer: ciphertext.Array, inputOffset: ciphertext.Offset + CONTEXT_BUFFER_LENGTH, inputCount: fullBlockLength, outputBuffer: destination.Array, outputOffset: destination.Offset);
 
 						finalBlock = aesDecryptor.TransformFinalBlock(ciphertext.Array, ciphertext.Offset + CONTEXT_BUFFER_LENGTH + fullBlockLength, cipherLength - fullBlockLength);
-						Utils.BlockCopy(finalBlock, 0, outputSegment.Value.Array, outputSegment.Value.Offset + fullBlockTransformed, finalBlock.Length);
-						outputSegment = new ArraySegment<byte>?(new ArraySegment<byte>(outputSegment.Value.Array, outputSegment.Value.Offset, fullBlockTransformed + finalBlock.Length));
+
+						int plaintextLength = checked(fullBlockTransformed + finalBlock.Length);
+						if (plaintextLength > destination.Count)
+							throw new ArgumentException("Output segment is too small.", nameof(outputSegment));
+
+						Utils.BlockCopy(finalBlock, 0, destination.Array, destination.Offset + fullBlockTransformed, finalBlock.Length);
+						outputSegment = new ArraySegment<byte>(destination.Array, destination.Offset, plaintextLength);
 					}// using aesDecryptor
 				}// using aes
 			}

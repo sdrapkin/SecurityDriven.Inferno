@@ -21,6 +21,7 @@ namespace SecurityDriven.Inferno.Otp
 		static int ComputeTotp(byte[] secret, long timeStepNumber, int totpLength, string modifier)
 		{
 			if (secret == null) throw new ArgumentNullException(nameof(secret));
+			if (totpLength == 0) throw new ArgumentOutOfRangeException(nameof(totpLength));
 
 			byte[] timestepAsBytes = new byte[sizeof(long)], hash = null;
 			new Utils.LongStruct { LongValue = timeStepNumber }.ToBEBytes(timestepAsBytes);
